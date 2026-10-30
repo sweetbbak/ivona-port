@@ -2,6 +2,7 @@
  * Unit blacklists (0x5df48..0x5e4f0): sorted lists of unit ids read from an
  * "IVONA_Blacklist" text file, kept in a voice's "blacklist" feature list.
  */
+#include "port_qsort.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,7 +89,7 @@ blacklist *blacklist_load_ts(cst_tokenstream *ts, char *err, size_t errlen)
         /* ids follow the count: word n of the block is the n-th id */
         ((unsigned int *)bl)[++bl->n] = id;
     }
-    qsort(bl->ids, bl->n, sizeof(unsigned int), blacklist_cmp_sort);
+    ivona_qsort(bl->ids, bl->n, sizeof(unsigned int), blacklist_cmp_sort);
     return bl;
 }
 

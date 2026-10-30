@@ -12,7 +12,6 @@ float acoustic_stub_1(const void *a, const void *b, int x);
 unsigned int unit_half_cost(const vox_unit *x, const vox_unit *t, const int *weights);
 
 #define PHONE(u, i) ((u)->phones[i]->name)
-#define F(u, off) (((const unsigned char *)(u))[off])   /* a byte feature of a unit */
 #define CLASS(s) (*(const char *)(s))                   /* first char of a class string */
 
 static inline int absdiff(int x, int y)
@@ -49,30 +48,30 @@ static inline unsigned int unit_side_cost(const vox_unit *x, const vox_unit *t, 
     if (strcmp(PHONE(t, 1), "r") == 0 || strcmp(PHONE(t, 3), "r") == 0)
         cost = vc == '+' ? cost * 6 : cost * 3;
     /* positions and prosody */
-    cost += absdiff(F(x, 0x19), F(t, 0x19)) * 3 + absdiff(F(x, 0x18), F(t, 0x18)) * 3
-            + absdiff(F(x, 0x1a), F(t, 0x1a)) * 3;
-    if (F(t, 0x1d) != F(x, 0x1d))
+    cost += absdiff(x->f19, t->f19) * 3 + absdiff(x->f18, t->f18) * 3
+            + absdiff(x->f1a, t->f1a) * 3;
+    if (t->f1d != x->f1d)
         cost += vc == '+' ? 1005 : 5;
-    cost += (absdiff(F(x, 0x21), F(t, 0x21)) + absdiff(F(x, 0x20), F(t, 0x20))) * 2;
-    if (MISMATCH_1(F(x, 0x22), F(t, 0x22)))
+    cost += (absdiff(x->f1f[2], t->f1f[2]) + absdiff(x->f1f[1], t->f1f[1])) * 2;
+    if (MISMATCH_1(x->f1f[3], t->f1f[3]))
         cost += 2;
-    if (F(x, 0x23) == 1 && F(t, 0x23) > 1)
-        cost += F(x, 0x1d) == 0 || vc != '+' ? 15 : w[0];
-    if (F(x, 0x26) != F(t, 0x26))
+    if (x->f1f[4] == 1 && t->f1f[4] > 1)
+        cost += x->f1d == 0 || vc != '+' ? 15 : w[0];
+    if (x->f1f[7] != t->f1f[7])
         cost++;
-    if (F(x, 0x27) != F(t, 0x27))
+    if (x->f1f[8] != t->f1f[8])
         cost++;
-    cost += absdiff(F(x, 0x34), F(t, 0x34)) * 3 + (strcmp(x->ph30->name, t->ph30->name) ? 3 : 0);
-    if (F(x, 0x44) != F(t, 0x44))
+    cost += absdiff(x->f34, t->f34) * 3 + (strcmp(x->ph30->name, t->ph30->name) ? 3 : 0);
+    if (x->f44 != t->f44)
         cost++;
-    if (F(x, 0x45) == 1) {
-        if (F(t, 0x45) > 1)
+    if (x->f45 == 1) {
+        if (t->f45 > 1)
             cost += 2;
-    } else if (F(x, 0x45) > 1 && F(t, 0x45) == 1)
+    } else if (x->f45 > 1 && t->f45 == 1)
         cost++;
-    if (F(x, 0x46) == 1 && F(t, 0x46) > 1)
+    if (x->f46 == 1 && t->f46 > 1)
         cost += 3;
-    if (F(x, 0x4c) != F(t, 0x4c))
+    if (x->f4c != t->f4c)
         cost++;
     if (x->content40 == 0) {
         if (t->content40)
@@ -85,31 +84,31 @@ static inline unsigned int unit_side_cost(const vox_unit *x, const vox_unit *t, 
         cost += 3;
     if (t->content40 == 0 && strcmp(t->ph40->name, x->ph40->name) != 0)
         cost += 10;
-    if (F(x, 0x50) != F(t, 0x50))
+    if (x->f4d[3] != t->f4d[3])
         cost++;
-    if (MISMATCH_1(F(x, 0x51), F(t, 0x51)))
+    if (MISMATCH_1(x->f4d[4], t->f4d[4]))
         cost++;
-    if (MISMATCH_1(F(x, 0x52), F(t, 0x52)))
+    if (MISMATCH_1(x->f4d[5], t->f4d[5]))
         cost++;
     /* the tone (ph54: ToBI labels such as L, L*, H) where the target is accented */
-    if (F(t, 0x46) == 1) {
+    if (t->f46 == 1) {
         tone = strcmp(x->ph54->name, t->ph54->name) ? 10 : 0;
         if (strcmp("L*", t->ph54->name) == 0 && strcmp("L", x->ph54->name) == 0)
             tone = 0;
         else if (strcmp("L", t->ph54->name) == 0 && strcmp("L*", x->ph54->name) == 0)
             tone = 8;
-        if (F(x, 0x46) != 1)
+        if (x->f46 != 1)
             cost += 5;
-        if (F(t, 0x23) == 1) {
-            int k = F(x, 0x23) == 1 ? 0 : 100, m = F(x, 0x23) == 1 ? 0 : 1500;
+        if (t->f1f[4] == 1) {
+            int k = x->f1f[4] == 1 ? 0 : 100, m = x->f1f[4] == 1 ? 0 : 1500;
 
             if (vc == '+' || CLASS(t->p8c) != '-')
                 cost += tone * 250 + m;
             else
                 cost += tone * 20 + k;
-        } else if (F(t, 0x1d)) {
-            unsigned int u = F(t, 0x1d) == F(x, 0x1d) && F(x, 0x46) < 2 && F(x, 0x23) != 1
-                             ? F(x, 0x23) != F(t, 0x23) : 10;
+        } else if (t->f1d) {
+            unsigned int u = t->f1d == x->f1d && x->f46 < 2 && x->f1f[4] != 1
+                             ? x->f1f[4] != t->f1f[4] : 10;
 
             if (vc == '+')
                 cost += tone * 25 + u * 25;
@@ -118,11 +117,11 @@ static inline unsigned int unit_side_cost(const vox_unit *x, const vox_unit *t, 
             else
                 cost += tone * 15 + u * 15;
         }
-        if (F(t, 0x19) == 1)
+        if (t->f19 == 1)
             cost += CLASS(t->p8c) == '-' ? tone * 20 : tone * 40;
         cost += tone;
     }
-    if ((F(x, 0x46) == 1 || F(x, 0x45) == 1) && F(t, 0x23) > 1 && F(t, 0x22) > 1
+    if ((x->f46 == 1 || x->f45 == 1) && t->f1f[4] > 1 && t->f1f[3] > 1
         && strcmp(x->ph54->name, "H") == 0)
         cost += 1000;
     /* duration */
@@ -168,16 +167,16 @@ unsigned int unit_model_cost(const vox_unit *a, const vox_unit *b, const vox_uni
     char vc = CLASS(tb->p88);
     int extra = 0, aflag, taflag;
 
-    if (F(a, 0x19) == 1 && F(a, 0x21) == 1 && F(b, 0x18) == 1 && F(b, 0x20) == 1) {
-        if (!(F(ta, 0x19) == 1 && F(ta, 0x21) == 1 && F(tb, 0x18) == 1 && F(tb, 0x20) == 1))
+    if (a->f19 == 1 && a->f1f[2] == 1 && b->f18 == 1 && b->f1f[1] == 1) {
+        if (!(ta->f19 == 1 && ta->f1f[2] == 1 && tb->f18 == 1 && tb->f1f[1] == 1))
             extra = vc == '+' ? 500 : 350;
-    } else if (F(ta, 0x19) == 1 && F(ta, 0x21) == 1 && F(tb, 0x18) == 1)
-        extra = F(tb, 0x20) == 1 ? 5 : 0;
-    aflag = F(a, 0x18) == 1 && F(a, 0x20) == 1;
-    taflag = F(ta, 0x18) == 1 && F(ta, 0x20) == 1;
+    } else if (ta->f19 == 1 && ta->f1f[2] == 1 && tb->f18 == 1)
+        extra = tb->f1f[1] == 1 ? 5 : 0;
+    aflag = a->f18 == 1 && a->f1f[1] == 1;
+    taflag = ta->f18 == 1 && ta->f1f[1] == 1;
     if (aflag != taflag)
         extra += CLASS(ta->p88) == '+' ? 10 : 5;
-    if ((F(b, 0x19) == 1 && F(b, 0x21) == 1) != (F(tb, 0x19) == 1 && F(tb, 0x21) == 1))
+    if ((b->f19 == 1 && b->f1f[2] == 1) != (tb->f19 == 1 && tb->f1f[2] == 1))
         extra += 5;
     total = total + half + extra;
     if (*(const int *)(ta->unk_60 + 4) != 0 || *(const int *)(tb->unk_60 + 4) != 0)

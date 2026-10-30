@@ -2,6 +2,7 @@
  * Vox unit databases (0x5e4f0..0x615d0): the vox file header and section table, the
  * decoder, unit record decoding and unit selection. Compiled without inlining (see config).
  */
+#include "port_qsort.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -757,7 +758,7 @@ void select_segment_resize(select_segment *seg, int n)
 /* 0x5fedc arm: sorts the candidates by cost. */
 void select_segment_sort(select_segment *seg)
 {
-    qsort(seg->cands, seg->n_cands, sizeof(select_cand), select_cand_cmp_cost);
+    ivona_qsort(seg->cands, seg->n_cands, sizeof(select_cand), select_cand_cmp_cost);
 }
 
 #define VITERBI_INF 1000000000
@@ -1011,10 +1012,10 @@ int *unit_select_viterbi(unit_selector *s, unsigned int beam, const cst_val *bl,
             cur->cands[k].total = VITERBI_INF;
         if (m) {
             t = ivona_time_usec();
-            qsort(prev->cands, prev->n_cands, sizeof(select_cand), select_cand_cmp_8);
+            ivona_qsort(prev->cands, prev->n_cands, sizeof(select_cand), select_cand_cmp_8);
             metrics_add_time(m, "diphone_graph_sort_dist_time", ivona_time_usec() - t);
         } else
-            qsort(prev->cands, prev->n_cands, sizeof(select_cand), select_cand_cmp_8);
+            ivona_qsort(prev->cands, prev->n_cands, sizeof(select_cand), select_cand_cmp_8);
         /* continuing a unit costs no join */
         for (k = 0; k < prev->n_cands; k++) {
             pc = &prev->cands[k];

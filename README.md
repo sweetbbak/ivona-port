@@ -49,23 +49,51 @@ it.
 
 ## Status
 
-This is the first 64-bit compile (GCC 16, x86_64, before the third-party libraries were
-fetched). The engine has 27 errors and the voice library 23, of these kinds:
+**x86_64 Linux works.** On every line of `tests/corpus.txt` (23 lines: numbers, dates, money,
+abbreviations, homographs, a long paragraph), the native build produces WAVs that are byte
+for byte the same as the original 32-bit Android libraries' output. AddressSanitizer and
+UBSan report nothing on the corpus.
 
-| Problem | Where | Fix (here) |
-|---|---|---|
-| `register … asm("r5")` pins that only serve matching | metrics.c, wordemb.c, hash.c, cst_synth.c, cst_postlex.c, voice_init.c | drop them |
-| `android/log.h` | flite/cst_error.c, android_log.cpp | a logging shim for non-Android |
-| OpenSSL 3 headers instead of 1.0.2h | isef.c, wavesynth.c | gone once `third_party/` is built |
-| GCC 16 strictness: `NULL` without its header, `return;` in a non-void function, a pointer type | ssml_prosody.c, flite/cst_item.c, wavesynth.c | small fixes |
+```
+make
+build/x86_64-pc-linux-gnu/speak path/to/eng.gbr.amy.1.6.101.3 "Hello world." hello.wav
+tools/difftest.sh path/to/eng.gbr.amy.1.6.101.3 REF_DIR   # REF_DIR: NN-orig.wav references
+make OUT=build/asan OPT="-O1 -g -fsanitize=address,undefined" LDFLAGS=-fsanitize=address,undefined
+```
 
-Then come the 64-bit behaviour checks:
-- **Pointer/integer casts:** 13 warnings to review.
-- **Sizes and offsets:** anything that assumes 32-bit sizes.
-- **Plain `char`:** must stay signed (`-fsigned-char`, set in `build.mk`).
-- **Floating point:** `-ffp-contract=off`, and libm differences.
+What the port had to change, and what to watch for when importing more code from the decomp:
 
-The target is output identical to the decomp's 32-bit build on its difftest corpus.
+- **Per-file struct copies.** The decomp often re-declares a struct in each file, with `int`
+  placeholders for pointers or padding to 32-bit offsets. Each struct the engine and voice share
+  now has one definition (`include/lang_core.h`, `token_chunk.h`, `mark_queue.h`, the real
+  `dom.h`, `ssml_doc.h`, `tts_voxdb.h`, ...).
+- **Hard-coded sizes and offsets.** Some code uses literal 32-bit sizes (`vector_new(4, ...)`
+  for pointers, `cst_safe_alloc(..., 0x14)`, union-member sizes), `+ 0x10`-style offsets, or
+  byte-offset field reads (`F(u, 0x19)` in the target cost). These are now `sizeof`/`offsetof`
+  or named fields.
+- **Matching tricks.**
+  - Register pins and empty `asm` barriers are removed.
+  - Functions declared with the wrong return type or no return relied on ARM leaving the result
+    in `r0`.
+  - One call left out an argument that ARM happened to pass in `r0` (`ssml_doc_new`).
+- **Declarations that disagree with definitions.** An LTO build finds them all
+  (`make OPT="-O1 -flto=auto -Wlto-type-mismatch" LDFLAGS="-flto=auto -Wlto-type-mismatch"`):
+  pointers truncated through `int`, and `int`s passed where `size_t` or pointers are expected.
+- **Behaviour the original got from its platform.**
+  - `-fwrapv`: signed overflow wraps as on the original.
+  - `-fsigned-char`.
+  - `-ffp-contract=off`.
+  - A float stub returned `int`: ARM soft-float read that as 0.0, x86-64 reads `xmm0`.
+  - **`qsort`:** unit candidates are sorted by cost with frequent ties, so the original C
+    library's algorithm matters. `src/port/bsd_qsort.c` is bionic's 4.4BSD/FreeBSD qsort, and
+    all of IVONA's sorts use it.
+
+Open:
+- arm64 Android (NDK) build.
+- `isef.c` reads 32-bit words from unaligned file data, which is fine on x86-64 and arm64 but
+  is formally undefined.
+- The `acoustic.c` noise generator calls `ivona_rand(&seed)` against a definition taking the
+  seed by value. That code is not reached for Amy.
 
 ## Known gaps inherited from the decomp
 

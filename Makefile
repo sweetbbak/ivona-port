@@ -16,15 +16,19 @@ LDFLAGS ?=
 ANDROID := $(findstring android,$(TRIPLE))
 PLATFORM_INC := $(if $(ANDROID),,-Iplatform/linux)
 PLATFORM_LIBS := $(if $(ANDROID),-llog,)
-BASE := $(OPT) -fPIC -ffunction-sections -fdata-sections -ffp-contract=off -fno-strict-aliasing \
+# -fwrapv: signed overflow wraps as in the original machine code (decompiled code relies on it)
+BASE := $(OPT) -fPIC -ffunction-sections -fdata-sections -ffp-contract=off -fno-strict-aliasing -fwrapv \
         -Iinclude -Iinclude/flite $(PLATFORM_INC)
 CSTD := -std=gnu99
 CXXSTD := -fno-exceptions -fno-rtti
 
 include build.mk
 
-ENGINE_OBJS := $(patsubst %,$(OUT)/engine/%.o,$(LIBTTSIVONAVOICE_SRCS))
-VOICE_OBJS := $(patsubst %,$(OUT)/voice/%.o,$(LIBVOICE_EN_GB_AMY_SRCS))
+# port-only sources, in both libraries
+PORT_SRCS := src/port/bsd_qsort.c
+
+ENGINE_OBJS := $(patsubst %,$(OUT)/engine/%.o,$(LIBTTSIVONAVOICE_SRCS) $(PORT_SRCS))
+VOICE_OBJS := $(patsubst %,$(OUT)/voice/%.o,$(LIBVOICE_EN_GB_AMY_SRCS) $(PORT_SRCS))
 
 all: $(OUT)/libttsivonavoice.so $(OUT)/libvoice_en_gb_amy.so $(OUT)/speak
 

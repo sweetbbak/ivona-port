@@ -1,4 +1,5 @@
 /* IVONA engine: growable array of fixed-size elements, also usable as a cst_val. */
+#include "port_qsort.h"
 #include <stdlib.h>
 #include <string.h>
 #include "cst_alloc.h"
@@ -219,7 +220,7 @@ int vector_lower_bound(const ivona_vector *v, const void *key, ivona_vector_cmp_
 /* 0x27d24: arm */
 void vector_sort(ivona_vector *v, int (*cmp)(const void *, const void *))
 {
-    qsort(v->data, v->count, v->elem_size, cmp);
+    ivona_qsort(v->data, v->count, v->elem_size, cmp);
 }
 
 /* 0x27d3c: arm */

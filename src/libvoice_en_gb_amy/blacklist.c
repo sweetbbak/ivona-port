@@ -1,6 +1,7 @@
 /*
  * Unit blacklists (0x39110..0x396b8)
  */
+#include "port_qsort.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -101,7 +102,7 @@ blacklist *blacklist_load_ts(cst_tokenstream *ts, char *err, size_t errlen)
         /* ids follow the count: word n of the block is the n-th id */
         ((unsigned int *)bl)[++bl->n] = id;
     }
-    qsort(bl->ids, bl->n, sizeof(unsigned int), blacklist_cmp_sort);
+    ivona_qsort(bl->ids, bl->n, sizeof(unsigned int), blacklist_cmp_sort);
     return bl;
 }
 
