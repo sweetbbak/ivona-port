@@ -13,6 +13,7 @@ and quirks survive; what the vocoder changes is the waveform rendering (codec te
 discontinuities at the joins).
 """
 import argparse
+import json
 import os
 import sys
 
@@ -23,9 +24,25 @@ import torch
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "vendor", "BigVGAN"))
 import bigvgan  # noqa: E402
+from env import AttrDict  # noqa: E402
+from huggingface_hub import hf_hub_download  # noqa: E402
 from meldataset import get_mel_spectrogram  # noqa: E402
 
 MODEL = "nvidia/bigvgan_v2_22khz_80band_256x"
+
+
+def load_model(device):
+    """BigVGAN from its Hugging Face files; the checkpoint is loaded as tensors only
+    (weights_only: no pickled code runs). BigVGAN's own from_pretrained does not match current
+    huggingface_hub versions."""
+    with open(hf_hub_download(MODEL, "config.json")) as f:
+        h = AttrDict(json.load(f))
+    model = bigvgan.BigVGAN(h, use_cuda_kernel=False)
+    state = torch.load(hf_hub_download(MODEL, "bigvgan_generator.pt"), map_location="cpu",
+                       weights_only=True)
+    model.load_state_dict(state["generator"])
+    model.remove_weight_norm()
+    return model.eval().to(device)
 
 
 def joins_from_marks(path, sample_rate, hop):
@@ -65,9 +82,7 @@ def main():
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = bigvgan.BigVGAN.from_pretrained(MODEL, use_cuda_kernel=False)
-    model.remove_weight_norm()
-    model = model.eval().to(device)
+    model = load_model(device)
     h = model.h
 
     audio, sr = sf.read(args.wav, dtype="float32")

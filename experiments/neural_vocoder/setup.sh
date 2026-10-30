@@ -12,7 +12,7 @@ if command -v nvidia-smi >/dev/null && nvidia-smi >/dev/null 2>&1; then
 else
     uv pip install -q --python .venv torch --index-url https://download.pytorch.org/whl/cpu
 fi
-uv pip install -q --python .venv numpy scipy soundfile librosa huggingface_hub
+uv pip install -q --python .venv numpy scipy soundfile librosa huggingface_hub matplotlib
 if [ ! -d vendor/BigVGAN ]; then
     git clone -q --depth 1 https://github.com/NVIDIA/BigVGAN.git vendor/BigVGAN
 fi

@@ -25,14 +25,37 @@ For each sentence, `out/` gets three files:
 | `NN.smooth.wav` | resynthesis with the mel frames around each unit join blended |
 
 One file at a time: `.venv/bin/python resynth.py some.wav [--marks some.marks] [--smooth-frames N]`.
+`.venv/bin/python compare.py` measures the outputs and writes `out/NN.ab.wav` (engine, plain,
+smoothed, 0.5 s apart) for A/B listening.
+
+## First results
+
+Measured on the demo's three sentences:
+
+| Version | Flux at joins / elsewhere | Log-mel distance to the engine |
+|---|---|---|
+| engine | 0.93–1.11 | 0 |
+| plain BigVGAN | 0.93–1.11 | 0.13 |
+| smoothed (±2 frames) | 0.76–0.90 | 0.33–0.46 |
+
+- **No visible seams to begin with.** The engine's estimated joins are no rougher than the rest
+  of the signal: either IVONA already blends its joins, or the estimates (phone midpoints from
+  viseme marks) are too coarse to hit them.
+- **Plain resynthesis is a faithful re-render.** The difference is texture, mainly SILK's
+  codec character; pronunciation is unchanged.
+- **The smoothing blurs broadly.** With 30–50 joins per sentence, ±2 frames touch over half of
+  all frames, so it reduces change everywhere, not just at joins.
+- **The next step for real join smoothing:** expose the engine's exact unit boundaries as a mark
+  type, and smooth only ±1 frame there.
 
 ## Notes
 
 - **The model.** NVIDIA BigVGAN v2, `nvidia/bigvgan_v2_22khz_80band_256x` (MIT licence). It is a
   universal vocoder at 22,050 Hz, Amy's own sample rate, so it needs no training and no
   resampling.
-- **Downloads.** The model downloads from Hugging Face on first use and is loaded by BigVGAN's
-  code with `torch.load`. `setup.sh` clones that code into `vendor/`. All of `.venv/`,
+- **Downloads.** The model's `config.json` and generator weights download from Hugging Face on
+  first use. They are loaded with `torch.load(weights_only=True)`, so no pickled code runs.
+  BigVGAN's own `from_pretrained` does not work with current `huggingface_hub`. `setup.sh` clones that code into `vendor/`. All of `.venv/`,
   `vendor/` and `out/` stay out of git.
 - **Where the joins are.** The engine's units are diphones, which join near the middle of each
   phone. `resynth.py` estimates the joins from the viseme marks of `speak --marks` (one per
