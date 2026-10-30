@@ -12,6 +12,7 @@ third_party/silk-sdk-fix-1.0.8/
 vox_*
 lang_*.dat
 speechd/sd_ivona_port
+speechd/sd_ivona-port
 speechd/ivona-port.conf
 android/.gradle/
 android/build/

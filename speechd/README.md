@@ -1,6 +1,6 @@
 # speech-dispatcher module
 
-`sd_ivona_port` makes the IVONA engine with the Amy voice (British English) a
+`sd_ivona-port` makes the IVONA engine with the Amy voice (British English) a
 speech-dispatcher output module. Screen readers such as Orca and any program using
 speech-dispatcher (`spd-say`) can then use it.
 
@@ -24,7 +24,9 @@ DefaultModule ivona-port
 ```
 
 The module is named `ivona-port` because speech-dispatcher already has an `ivona` module, for
-IVONA's old Linux SDK.
+IVONA's old Linux SDK. speech-dispatcher finds it without any `AddModule` line: it autodetects
+binaries named `sd_<module>` that have a `<module>.conf`. If you add the line anyway, it is
+`AddModule "ivona-port" "sd_ivona-port" "ivona-port.conf"`.
 
 ## Manual steps
 
@@ -57,5 +59,5 @@ Standalone test, without speech-dispatcher:
 
 ```
 printf 'INIT\nSPEAK\n<speak>Hello world.</speak>\n.\nQUIT\n' | \
-    LD_LIBRARY_PATH=build/x86_64-pc-linux-gnu speechd/sd_ivona_port my.conf | grep -av '^705'
+    LD_LIBRARY_PATH=build/x86_64-pc-linux-gnu speechd/sd_ivona-port my.conf | grep -av '^705'
 ```

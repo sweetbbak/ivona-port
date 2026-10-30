@@ -1,14 +1,15 @@
 # speech-dispatcher output module for the IVONA engine and the Amy voice.
 #
-#   make                                  build sd_ivona_port against ../build/<triple>
+#   make                                  build sd_ivona-port against ../build/<triple>
 #   sudo make install VOICE_DIR=/path/to/eng.gbr.amy.1.6.101.3
 #   sudo make uninstall
 #
 # install puts the engine and voice libraries in $(LIBDIR), the voice data (copied from
 # VOICE_DIR: it is not distributed with the sources) in $(VOICEDIR), the module in
 # speech-dispatcher's module directory and its configuration in $(CONFDIR). speech-dispatcher
-# then lists it as "ivona-port" (spd-say -O); select it with spd-say -o ivona-port or in
-# speechd.conf (DefaultModule ivona-port).
+# then finds it by itself as "ivona-port" (spd-say -O: the binary is named sd_<module>, the
+# configuration <module>.conf); select it with spd-say -o ivona-port or in speechd.conf
+# (DefaultModule ivona-port).
 CC ?= cc
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib/ivona-port
@@ -25,12 +26,12 @@ CPPFLAGS += -I$(PORT)/include $(shell pkg-config --cflags speech-dispatcher) -id
             -DIVONA_VOICE_DIR='"$(VOICEDIR)"' -DIVONA_VOICE_LIB='"$(LIBDIR)/libvoice_en_gb_amy.so"'
 LDLIBS += -L$(BUILD) -lttsivonavoice -lspeechd_module -lm -Wl,-rpath,$(LIBDIR)
 
-all: sd_ivona_port ivona-port.conf
+all: sd_ivona-port ivona-port.conf
 
 $(BUILD)/libttsivonavoice.so $(BUILD)/libvoice_en_gb_amy.so:
 	$(MAKE) -C $(PORT)
 
-sd_ivona_port: sd_ivona_port.c $(BUILD)/libttsivonavoice.so
+sd_ivona-port: sd_ivona_port.c $(BUILD)/libttsivonavoice.so
 	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS)
 
 ivona-port.conf: ivona-port.conf.in
@@ -43,14 +44,16 @@ install: all $(BUILD)/libvoice_en_gb_amy.so
 	install -d $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VOICEDIR) $(DESTDIR)$(MODULEDIR) $(DESTDIR)$(CONFDIR)
 	install -m 755 $(BUILD)/libttsivonavoice.so $(BUILD)/libvoice_en_gb_amy.so $(DESTDIR)$(LIBDIR)/
 	for f in $(VOICE_FILES); do install -m 644 "$(VOICE_DIR)/$$f" $(DESTDIR)$(VOICEDIR)/; done
-	install -m 755 sd_ivona_port $(DESTDIR)$(MODULEDIR)/
+	install -m 755 sd_ivona-port $(DESTDIR)$(MODULEDIR)/
+	rm -f $(DESTDIR)$(MODULEDIR)/sd_ivona_port   # the name of earlier versions
 	install -m 644 ivona-port.conf $(DESTDIR)$(CONFDIR)/
 
 uninstall:
-	rm -f $(DESTDIR)$(MODULEDIR)/sd_ivona_port $(DESTDIR)$(CONFDIR)/ivona-port.conf
+	rm -f $(DESTDIR)$(MODULEDIR)/sd_ivona-port $(DESTDIR)$(MODULEDIR)/sd_ivona_port \
+	      $(DESTDIR)$(CONFDIR)/ivona-port.conf
 	rm -rf $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VOICEDIR)
 
 clean:
-	rm -f sd_ivona_port ivona-port.conf
+	rm -f sd_ivona-port sd_ivona_port ivona-port.conf
 
 .PHONY: all install uninstall clean

@@ -32,6 +32,9 @@ static tts_instance *tts;
 static tts_voice *voice;
 static int sample_rate;
 static volatile int stop_requested;
+/* module_process() may handle QUIT while we synthesize (it is called between chunks to see STOP):
+ * module_close() then only asks to stop, and the engine is released once synthesis unwinds */
+static int speaking, close_pending;
 static FILE *debug_fp;
 
 /* speech-dispatcher's -100..100 settings, applied before each message */
@@ -240,6 +243,7 @@ void module_speak_sync(const char *data, size_t bytes, SPDMessageType msgtype)
         return;
     }
     stop_requested = 0;
+    speaking = 1;
     apply_params();
     module_speak_ok();
     module_report_event_begin();
@@ -265,11 +269,17 @@ void module_speak_sync(const char *data, size_t bytes, SPDMessageType msgtype)
             module_report_index_mark(name);
     }
 done:
+    speaking = 0;
     free(text);
     if (stop_requested)
         module_report_event_stop();
     else
         module_report_event_end();
+    if (close_pending) {
+        /* the server said QUIT while we spoke: finish as the library would have */
+        module_close();
+        exit(0);
+    }
 }
 
 size_t module_pause(void)
@@ -291,6 +301,12 @@ int module_loop(void)
 
 int module_close(void)
 {
+    if (speaking) {
+        stop_requested = 1;
+        close_pending = 1;
+        return 0;
+    }
+    close_pending = 0;
     if (voice)
         tts_unload_voice(voice);
     if (tts)
