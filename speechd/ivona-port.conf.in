@@ -1,0 +1,7 @@
+# speech-dispatcher module configuration for sd_ivona_port (IVONA, Amy, British English)
+
+# the directory with vox_en_gb_amy22i and lang_en_gb.dat
+VoiceDir "@VOICEDIR@"
+
+# the voice library the engine loads
+VoiceLib "@LIBDIR@/libvoice_en_gb_amy.so"
