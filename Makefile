@@ -56,6 +56,10 @@ $(OUT)/libvoice_en_gb_amy.so: $(VOICE_OBJS)
 	    -Wl,-soname,libvoice_en_gb_amy.so $(TPLIB)/libpcre.a $(TPLIB)/libsilk.a $(TPLIB)/libcmp.a \
 	    -ldl -lm $(PLATFORM_LIBS)
 
+# Android: the JNI bridge of the TTS app (android/)
+$(OUT)/libivona_jni.so: android/app/src/main/c/ivona_jni.c $(OUT)/libttsivonavoice.so
+	$(CC) $(OPT) -fPIC -shared -Iinclude -o $@ $< -L$(OUT) -lttsivonavoice -llog -Wl,--no-undefined
+
 # the test program: speak [--voice-lib PATH] [--marks FILE] VOICE_DIR "text" out.wav
 $(OUT)/speak: tools/speak.c $(OUT)/libttsivonavoice.so
 	$(CC) $(OPT) $(LDFLAGS) -Iinclude -o $@ tools/speak.c -L$(OUT) -lttsivonavoice -Wl,-rpath,'$$ORIGIN'
@@ -76,7 +80,7 @@ android-arm64 android-x86_64: android-%:
 	@test -d "$(NDK_BIN)" || { echo "no NDK found (set ANDROID_NDK_HOME to it)" >&2; exit 1; }
 	CC=$(NDK_BIN)/$(ANDROID_ABI_$*)21-clang third_party/build.sh
 	$(MAKE) CC=$(NDK_BIN)/$(ANDROID_ABI_$*)21-clang CXX=$(NDK_BIN)/$(ANDROID_ABI_$*)21-clang++ \
-	    $(addprefix build/$(ANDROID_ABI_$*)21/,libttsivonavoice.so libvoice_en_gb_amy.so speak) \
+	    $(addprefix build/$(ANDROID_ABI_$*)21/,libttsivonavoice.so libvoice_en_gb_amy.so libivona_jni.so speak) \
 	    OUT=build/$(ANDROID_ABI_$*)21
 ANDROID_ABI_arm64 = aarch64-linux-android
 ANDROID_ABI_x86_64 = x86_64-linux-android

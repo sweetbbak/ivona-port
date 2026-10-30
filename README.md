@@ -35,6 +35,17 @@ git switch main && git merge decomp
 The voice data (`vox_en_gb_amy22i`, `lang_en_gb.dat` from `eng.gbr.amy.1.6.101.3/`) is never
 committed. Programs take its directory as an argument.
 
+## Layout
+
+- **`src/`, `include/`, `build.mk`:** the engine and the voice (from the decomp, then ported).
+- **`src/port/`, `platform/`:** port-only code.
+- **`third_party/`:** fetch and build scripts for the pinned third-party libraries.
+- **`tools/speak.c`:** a command-line synthesizer. `tools/difftest.sh` compares its output with
+  references.
+- **`speechd/`:** a speech-dispatcher output module with an installer, for Linux screen readers
+  and `spd-say` (see `speechd/README.md`).
+- **`android/`:** an Android app that is a system-wide TTS engine (see `android/README.md`).
+
 ## Building
 
 ```
@@ -43,13 +54,13 @@ third_party/build.sh     # static PIC archives into third_party/build/<triple>/l
 make                     # build/<triple>/libttsivonavoice.so and libvoice_en_gb_amy.so
 ```
 
-For arm64 Android, set `CC`/`CXX` to the NDK's `aarch64-linux-android21-clang(++)`. Note that
-OpenSSL 1.0.2 has no Android arm64 target, so `third_party/build.sh` needs a configuration for
-it.
+For Android, `make android-arm64` (arm64-v8a) and `make android-x86_64` (the emulator) build
+the engine, the voice, the app's JNI bridge and `speak` with the NDK. The third-party libraries
+are built too. The NDK is found automatically (see the Makefile).
 
 ## Status
 
-**x86_64 Linux works.** On every line of `tests/corpus.txt` (23 lines: numbers, dates, money,
+**x86_64 Linux and Android (arm64-v8a, x86_64) work.** On every line of `tests/corpus.txt` (23 lines: numbers, dates, money,
 abbreviations, homographs, a long paragraph), the native build produces WAVs that are byte
 for byte the same as the original 32-bit Android libraries' output. AddressSanitizer and
 UBSan report nothing on the corpus.
