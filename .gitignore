@@ -1,0 +1,13 @@
+build/
+third_party/dl/
+third_party/build/
+third_party/openssl-1.0.2h/
+third_party/curl-7.52.1/
+third_party/pcre-8.37/
+third_party/expat-2.2.0/
+third_party/cmp-16/
+third_party/silk-sdk-fix-1.0.8/
+*.wav
+# the voice data is proprietary and never committed
+vox_*
+lang_*.dat
