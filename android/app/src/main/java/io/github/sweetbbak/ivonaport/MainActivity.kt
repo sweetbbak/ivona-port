@@ -21,6 +21,7 @@ import java.io.File
  * For testing, started with a "text" extra it synthesizes that text through the system TTS
  * framework into the app's external files directory (out.wav) and logs "synthesized" when done:
  *   adb shell am start -n io.github.sweetbbak.ivonaport/.MainActivity --es text "Hello world."
+ * An optional "rate" float extra (1 = normal) overrides the system speech rate for this test.
  */
 class MainActivity : Activity() {
     private var tts: TextToSpeech? = null
@@ -43,7 +44,11 @@ class MainActivity : Activity() {
                 val ok = result == TextToSpeech.SUCCESS
                 status.text = if (ok) "IVONA Amy is ready." else "The engine could not start."
                 speak.isEnabled = ok
-                intent.getStringExtra("text")?.let { if (ok) synthesizeToFile(it) }
+                intent.getStringExtra("text")?.let {
+                    if (intent.hasExtra("rate"))
+                        tts?.setSpeechRate(intent.getFloatExtra("rate", 1f))
+                    if (ok) synthesizeToFile(it)
+                }
             }
         }, packageName)
         speak.setOnClickListener {
