@@ -344,9 +344,9 @@ void tts_add_language(tts_instance *tts, tts_language *lang)
     if (tts->lang_table)
         cst_free(tts->lang_table);
     v = tts->languages;
-    table = p = cst_safe_alloc(vector_size(v) + 1, 0x14);
-    for (i = 0; i < vector_size(v); i++, p += 0x14)
-        memcpy(p, ((void **)*(void ***)vector_at(v, i))[1], 0x14);
+    table = p = cst_safe_alloc(vector_size(v) + 1, sizeof(tts_lang_desc));
+    for (i = 0; i < vector_size(v); i++, p += sizeof(tts_lang_desc))
+        memcpy(p, ((void **)*(void ***)vector_at(v, i))[1], sizeof(tts_lang_desc));
     tts->lang_table = (tts_lang_desc *)table;
     ivona_mutex_unlock(tts->lock_20);
 }
@@ -369,9 +369,9 @@ void tts_remove_language(tts_instance *tts, tts_language *lang)
     if (tts->lang_table)
         cst_free(tts->lang_table);
     v = tts->languages;
-    table = p = cst_safe_alloc(vector_size(v) + 1, 0x14);
-    for (i = 0; i < vector_size(v); i++, p += 0x14)
-        memcpy(p, ((void **)*(void ***)vector_at(v, i))[1], 0x14);
+    table = p = cst_safe_alloc(vector_size(v) + 1, sizeof(tts_lang_desc));
+    for (i = 0; i < vector_size(v); i++, p += sizeof(tts_lang_desc))
+        memcpy(p, ((void **)*(void ***)vector_at(v, i))[1], sizeof(tts_lang_desc));
     tts->lang_table = (tts_lang_desc *)table;
     ivona_mutex_unlock(tts->lock_20);
 }
@@ -541,7 +541,7 @@ int lang_load_part(tts_lang_desc *desc, tts_instance *tts, const char *path)
 
     if (part != NULL) {
         if (desc->part_init)
-            desc->part_init((char *)part + 0x10);
+            desc->part_init(((lang_part *)part)->data);
         vector_push(desc->parts, &part);
     }
     return part != NULL;
@@ -555,7 +555,7 @@ void lang_desc_free(tts_lang_desc *desc, tts_instance *tts)
     if (desc->parts) {
         if (desc->part_fini)
             for (p = desc->parts->data; p != (void **)desc->parts->data + desc->parts->count; p++)
-                desc->part_fini((char *)*p + 0x10);
+                desc->part_fini(((lang_part *)*p)->data);
         res_cache_release_all(tts->lang_cache, desc->parts);
         vector_free(desc->parts);
     }

@@ -60,12 +60,7 @@ void utt_chunk_free_utt(utt_chunk *c);
 int say_as_info_flag(const say_as_info *sa);
 
 /* language core data */
-typedef struct lang_core {
-    const char *code;
-    int unk_4[4];
-    cst_features *features;     /* +0x14 */
-    cst_features *params;       /* +0x18 */
-} lang_core;
+#include "lang_core.h"
 
 const char *utf8_last_char(const char *s);
 const char *utf8_strchr_str(const char *s, const char *ch);

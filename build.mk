@@ -128,7 +128,6 @@ LIBVOICE_EN_GB_AMY_SRCS = \
 	src/libttsivonavoice/flite/cst_regex.c \
 	src/libttsivonavoice/flite/cst_relation.c \
 	src/libttsivonavoice/flite/cst_string.c \
-	src/libttsivonavoice/flite/cst_synth.c \
 	src/libttsivonavoice/flite/cst_tokenstream.c \
 	src/libttsivonavoice/flite/cst_utterance.c \
 	src/libttsivonavoice/flite/cst_val.c \
@@ -139,14 +138,11 @@ LIBVOICE_EN_GB_AMY_SRCS = \
 	src/libttsivonavoice/flite/rateconv.c \
 	src/libttsivonavoice/flite/regexp.c \
 	src/libttsivonavoice/ivona_sys.c \
-	src/libttsivonavoice/phones.c \
 	src/libttsivonavoice/runnable_stubs_vorbis.c \
 	src/libttsivonavoice/syllabify.c \
 	src/libttsivonavoice/synth.c \
 	src/libttsivonavoice/track.c \
-	src/libttsivonavoice/uni.c \
 	src/libttsivonavoice/uni_case.c \
-	src/libttsivonavoice/utf8_iter.c \
 	src/libttsivonavoice/vox_codec.c \
 	src/libttsivonavoice/voxdb.c \
 	src/libttsivonavoice/wavesynth.c \

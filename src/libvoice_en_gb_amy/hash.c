@@ -109,8 +109,7 @@ void hash_put(hash *h, const void *key, size_t len, void *value)
     const size_t l = len;
     unsigned int hval = murmur_hash2(key, len);
     unsigned int idx = hval % h->size;
-    register hash_entry **buckets asm("r2") = h->buckets;
-    asm("" : "+r"(buckets));
+    hash_entry **buckets = h->buckets;
     hash_entry **pp = &buckets[idx];
     hash_entry *e;
 

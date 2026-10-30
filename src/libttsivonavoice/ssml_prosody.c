@@ -2,6 +2,7 @@
  * SSML <prosody> attribute values (0x26d38..0x273c4), as factors relative to the current ones.
  */
 #include <math.h>
+#include <stddef.h>
 #include <strings.h>
 
 int cst_parse_float_suffix(const char *s, const char *suffix, float *out);

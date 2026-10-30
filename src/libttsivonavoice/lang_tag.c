@@ -217,12 +217,7 @@ int vox_file_check(const char *path)
 tts_dict_entry **dict_new(void);
 void dict_free(tts_dict_entry **dict);
 
-typedef struct lang_core {
-    const char *code;
-    int unk_4[4];
-    cst_features *features;     /* +0x14 */
-    cst_features *params;       /* +0x18 */
-} lang_core;
+#include "lang_core.h"
 void lang_core_init(lang_core *l);
 void lang_core_free(lang_core *l);
 
@@ -339,10 +334,10 @@ make:
     l->file = f;
     l->core.code = code;
     lang_core_init(&l->core);
-    l->core.unk_4[0] = (int)lex;
-    l->core.unk_4[1] = lex_size;
-    l->core.unk_4[2] = (int)nopsa;
-    l->core.unk_4[3] = nopsa_size;
+    l->core.lex_data = (unsigned char *)lex;
+    l->core.lex_num_bytes = lex_size;
+    l->core.nopsa_data = (unsigned char *)nopsa;
+    l->core.nopsa_num_bytes = nopsa_size;
     l->lexicons = vector_new(sizeof(lang_section), NULL, NULL);
     for (name = isef_next(f, NULL, 0, &d, &ds); name; name = isef_next(f, d, ds, &d, &ds)) {
         n = strlen(name);

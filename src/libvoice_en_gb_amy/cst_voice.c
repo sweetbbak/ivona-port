@@ -18,7 +18,7 @@ struct param {
 /* 0x586b0: arm */
 ivona_voice *FUN_000586b0(const struct param **params)
 {
-    ivona_voice *v = cst_safe_alloc(1, 12);
+    ivona_voice *v = cst_safe_alloc(1, sizeof(ivona_voice));
     v->features = new_features();
     if (params && *params) {
         const struct param *p = *params;

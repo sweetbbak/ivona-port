@@ -220,6 +220,7 @@ int dom_set_pi(dom_doc *d, const char *name, const char *value)
 
         feat_set_string(f, cst_strdup(name), value);
     }
+    return 0;
 }
 
 /* 0x4a968 arm */
@@ -290,15 +291,18 @@ int dom_set_attr(dom_elem *e, const char *name, const char *value)
 
         feat_set_string(f, cst_strdup(name), value);
     }
+    return 0;
 }
 
 /* 0x4aa98 arm: the attribute value (left in r0 by get_param_string).
  * The call is not a sibcall, so the original's return value location differed from a
  * pointer's (arm_function_ok_for_sibcall compares them); a missing return in a function of
  * a wider type reproduces that. */
-long long dom_get_attr(const dom_elem *e, const char *name)
+const char *dom_get_attr(const dom_elem *e, const char *name)
 {
-    get_param_string(e->attrs, name, NULL);
+    if (e->n.type == DOM_TEXT)
+        return NULL;   /* text nodes have no attributes */
+    return get_param_string(e->attrs, name, NULL);
 }
 
 /* 0x4aaac arm: attribute name of the nearest ancestor-or-self of the given type that
@@ -319,7 +323,7 @@ const char *dom_inherited_attr(const dom_elem *e, const char *name)
     const char *s;
 
     for (; e; e = e->n.parent)
-        if ((s = get_param_string(e->attrs, name, NULL)) != NULL)
+        if (e->n.type != DOM_TEXT && (s = get_param_string(e->attrs, name, NULL)) != NULL)
             return s;
     return NULL;
 }

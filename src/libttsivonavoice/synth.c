@@ -144,12 +144,7 @@ found:
 }
 
 /* language core data */
-typedef struct lang_core {
-    const char *code;
-    int unk_4[4];
-    cst_features *features;     /* +0x14 */
-    cst_features *params;       /* +0x18 */
-} lang_core;
+#include "lang_core.h"
 
 /* 0x503e8 arm */
 __attribute__((optimize("no-optimize-sibling-calls")))

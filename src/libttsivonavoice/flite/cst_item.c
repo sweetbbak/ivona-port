@@ -105,8 +105,8 @@ cst_item_contents *new_item_contents(cst_item *i)
     return ic;
 }
 
-/* 0x4dc6c: IVONA declares this int but never returns a value (C89 style); the declared return
- * type is what stops GCC from tail-calling the final feat_set(). */
+/* 0x4dc6c: IVONA declares this int but never returns a value (C89 style); its one caller
+ * ignores the result. */
 int item_contents_set(cst_item *current, cst_item *i)
 {
     cst_item_contents *c;
@@ -118,7 +118,7 @@ int item_contents_set(cst_item *current, cst_item *i)
     else
         c = i->contents;
     if (c == current->contents)
-        return;
+        return 0;
     name = cst_relation_id_name(current->relation->id);
     item_unref_contents(current);
     current->contents = c;
@@ -129,6 +129,7 @@ int item_contents_set(cst_item *current, cst_item *i)
     }
     /* Add back reference */
     feat_set(current->contents->relations, name, item_val(current));
+    return 0;
 }
 
 /* 0x4dd20 */

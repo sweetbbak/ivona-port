@@ -2,6 +2,7 @@
  * Voice parameters (0x3b4b0..0x3d9a0): tts_voice_param("op.name[.which]", io_val) dispatches
  * through voice_params[] to typed handlers that read/write the voice's feature set.
  */
+#include <stdint.h>
 #include <limits.h>
 #include <math.h>
 #include <string.h>
@@ -394,7 +395,7 @@ int voice_param_int(tts_voice *v, const char *op, const char *feat, const char *
 }
 
 /* the beam limit a voice library allows: voice_data.unk_10 (voice_quality_init) */
-#define VOICE_MAX_BEAM(v) ((int)VOICE_DATA(v)->unk_10)
+#define VOICE_MAX_BEAM(v) ((int)(intptr_t)VOICE_DATA(v)->unk_10)
 
 /* 0x3c630: "quality" 1..10 over the unit selection beam: 1 is half the voice's beam, 10 no
  * limit (-1). */
@@ -738,7 +739,7 @@ void voice_quality_init(tts_voice *v)
         beam = 25;
     } else {
         d = VOICE_DATA(v);
-        d->unk_10 = (void *)beam;
+        d->unk_10 = (void *)(intptr_t)beam;
         beam >>= 1;
     }
     feat_set_int(d->features, "viterbi_beam", beam);

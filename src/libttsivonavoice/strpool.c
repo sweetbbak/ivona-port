@@ -2,16 +2,20 @@
  * String pool (0x476a0..0x47868): interned strings packed into 4 KiB chunks, freed all at once.
  * Chunks with room left are kept on `partial`; nearly full ones move to `full`.
  */
+#include <stddef.h>
 #include <string.h>
 #include "cst_alloc.h"
 
-#define STRPOOL_CHUNK_DATA 0xff8
+#define STRPOOL_CHUNK_SIZE 0x1000
 
 typedef struct strpool_chunk {
     struct strpool_chunk *next;
     int used;
     char data[];
 } strpool_chunk;
+
+/* the string bytes a chunk holds (0xff8 on 32-bit, where the header is 8 bytes) */
+#define STRPOOL_CHUNK_DATA (STRPOOL_CHUNK_SIZE - offsetof(strpool_chunk, data))
 
 typedef struct strpool {
     strpool_chunk *full;
@@ -56,7 +60,8 @@ char *strpool_add_n(strpool *p, const char *s, size_t n)
         if (c->used + 1 + n <= STRPOOL_CHUNK_DATA)
             break;
     if (c == NULL) {
-        c = cst_safe_alloc(n + 1 <= STRPOOL_CHUNK_DATA ? 0x1000 : n + 9, 1);
+        c = cst_safe_alloc(n + 1 <= STRPOOL_CHUNK_DATA ? STRPOOL_CHUNK_SIZE
+                                          : offsetof(strpool_chunk, data) + n + 1, 1);
         c->next = NULL;
         c->used = 0;
         c->next = p->partial;

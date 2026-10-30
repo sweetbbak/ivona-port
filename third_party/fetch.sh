@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 mkdir -p dl
 fetch() {  # url sha256 dir [file name, default: the URL basename]
     local f=dl/${4:-$(basename "$1")}
-    [ -f "$f" ] || curl -fL -o "$f" "$1"
+    [ -f "$f" ] || curl -fsSL -o "$f" "$1"
     echo "$2  $f" | sha256sum -c -
     [ -d "$3" ] || { mkdir -p "$3" && tar -xf "$f" -C "$3" --strip-components=1; }
 }

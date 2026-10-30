@@ -139,6 +139,7 @@ cst_val *blacklist_add(blacklist *bl, cst_features *f)
     if (l)
         return val_append((cst_val *)l, v);
     feat_set(f, "blacklist", v);
+    return v;
 }
 
 /* 0x39414: arm */
@@ -160,7 +161,6 @@ void blacklist_remove(blacklist *bl, cst_features *f)
     next = (cst_val *)val_cdr(l);
     if (next == NULL && prev == NULL) {
         feat_remove(f, "blacklist");
-        asm volatile("");
         return;
     }
     if (prev == NULL) {

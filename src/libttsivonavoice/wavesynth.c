@@ -332,14 +332,15 @@ void wavesynth_add_unit_marks(wavesynth *s, const cst_item *item, int start, int
     next = item_next(item);
     if (next)
         return;
+    /* the last unit of the utterance: a closing mark with no next item */
     m = wavesynth_mark_new();
-    m->a = (cst_val *)next;
+    m->a = NULL;
     m->b = (cst_val *)item;
-    m->unit = (int)next;
+    m->unit = 0;
     m->start = e;
     m->end = e;
     if (s->marks)
-        s->marks = val_append(s->marks, cons_val(userdata_val(m), next));
+        s->marks = val_append(s->marks, cons_val(userdata_val(m), NULL));
     else
         s->marks = cons_val(userdata_val(m), s->marks);
 }

@@ -94,7 +94,6 @@ int utt_set_input_text(cst_utterance *u, const char *text)
                     - (unsigned long)__builtin_return_address(0);
     const char *k = "input_text" + z;
     if (!text) {
-        __asm__("" :: "r"(k));
         text = "";
     }
     feat_set_string(f, k, text);
@@ -871,11 +870,9 @@ char *strchr_unescaped(const char *s, int c)
     char ch;
 
     for (;;) {
-        __asm__ volatile (";;;;;;;;");
         i = 0;
     inner:
         ch = s[i];
-        __asm__ goto ("" :::: check);
     check:
         if (ch == '\0')
             return NULL;
@@ -1385,7 +1382,6 @@ void word_append_segment(cst_item *w, const char *name)
             break;
         }
     }
-    __asm__ __volatile__ ("");
 }
 
 int feats_have_breath_units(const cst_features *f);
@@ -1655,10 +1651,9 @@ cst_utterance *phones_textanalysis(cst_utterance *u)
     cst_item *t, *w;
 
     if ((t = relation_head(utt_relation(u, REL_TOKEN))) != NULL) {
-        register const char *ph __asm__("r9") = "phones";
-        register const char *nm __asm__("r5") = "name";
-        register const char *em __asm__("r8") = "";
-        __asm__("" : "+r"(ph), "+r"(nm), "+r"(em));
+        const char *ph = "phones";
+        const char *nm = "name";
+        const char *em = "";
         do {
             item_set(t, ph, phones_from_string(item_feat_string(t, nm)));
             w = item_add_daughter(t, NULL);

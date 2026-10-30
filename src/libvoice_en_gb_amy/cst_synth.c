@@ -11,6 +11,7 @@
 #include "cst_val_defs.h"
 #include "cst_string.h"
 #include "cst_regex.h"
+#include "cst_tokenstream.h"
 #include "ivona_vector.h"
 #include "ivona_util.h"
 
@@ -626,11 +627,9 @@ char *strchr_unescaped(const char *s, int c)
     char ch;
 
     for (;;) {
-        __asm__ volatile (";;;;;;;;");
         i = 0;
     inner:
         ch = s[i];
-        __asm__ goto ("" :::: check);
     check:
         if (ch == '\0')
             return NULL;
@@ -759,7 +758,6 @@ void word_append_segment(cst_item *w, const char *name)
             break;
         }
     }
-    __asm__ __volatile__ ("");
 }
 
 int feats_have_breath_units(const cst_features *f);
@@ -882,7 +880,7 @@ float item_set_breath_acoustic_data(cst_item *item);
 #define PAUSE_BEFORE_BREATH 0.06f
 
 typedef struct zdur_cart zdur_cart;
-const zdur_cart *val_zdur_cart(const cst_val *v);
+zdur_cart *val_zdur_cart(const cst_val *v);
 short zdur_cart_duration(const zdur_cart *dc, const cst_item *seg);
 cst_utterance *cart_duration(cst_utterance *u);
 dnn_models *val_dnn_models(const cst_val *v);
@@ -1038,10 +1036,9 @@ cst_utterance *phones_textanalysis(cst_utterance *u)
     cst_item *t, *w;
 
     if ((t = relation_head(utt_relation(u, REL_TOKEN))) != NULL) {
-        register const char *ph __asm__("r9") = "phones";
-        register const char *nm __asm__("r5") = "name";
-        register const char *em __asm__("r8") = "";
-        __asm__("" : "+r"(ph), "+r"(nm), "+r"(em));
+        const char *ph = "phones";
+        const char *nm = "name";
+        const char *em = "";
         do {
             item_set(t, ph, phones_from_string(item_feat_string(t, nm)));
             w = item_add_daughter(t, NULL);
@@ -1052,5 +1049,235 @@ cst_utterance *phones_textanalysis(cst_utterance *u)
     return u;
 }
 
+/* ---- moved from src/libttsivonavoice/flite/cst_synth.c, which this library no longer compiles ---- */
 
+/* 0x663b4 arm: the items from i on, with their features, relations and daughters. */
+void item_print_tree(cst_file fd, const cst_item *i, const char *indent)
+{
+    const cst_featvalpair *p;
+    char sub[256];
 
+    for (; i; i = item_next(i)) {
+        cst_fprintf(fd, "%sITEM %p {\n", indent, i);
+        for (p = item_feats(i)->head; p; p = p->next) {
+            cst_fprintf(fd, "%s\t%s => ", indent, p->name);
+            val_print(fd, p->val);
+            cst_fprintf(fd, "\n");
+        }
+        cst_fprintf(fd, "%s\t---\n", indent);
+        for (p = i->contents->relations->head; p; p = p->next) {
+            cst_fprintf(fd, "%s\tR:%s => ", indent, p->name);
+            val_print(fd, p->val);
+            cst_fprintf(fd, "\n");
+        }
+        if (item_daughter(i)) {
+            snprintf(sub, 255, "%s\t\t", indent);
+            cst_fprintf(fd, "%s\tdaughters {\n", indent);
+            item_print_tree(fd, item_daughter(i), sub);
+            cst_fprintf(fd, "%s\t}\n", indent);
+        }
+        cst_fprintf(fd, "%s}\n", indent);
+    }
+}
+
+/* 0x66580 arm */
+const char *utt_input_text(const cst_utterance *u)
+{
+    return val_string(feat_val(u->features, "input_text"));
+}
+
+/* 0x665a0 arm */
+int utt_set_input_text(cst_utterance *u, const char *text)
+{
+    cst_features *f = u->features;
+    unsigned long z = (unsigned long)__builtin_return_address(0)
+                    - (unsigned long)__builtin_return_address(0);
+    const char *k = "input_text" + z;
+    if (!text) {
+        text = "";
+    }
+    feat_set_string(f, k, text);
+    return 0;
+}
+
+/* 0x665d8 arm */
+void item_print_list(cst_file fd, const cst_item *i)
+{
+    item_print_tree(fd, i, "");
+}
+
+/* 0x665e8 arm */
+void utt_print_relations(cst_file fd, cst_utterance *u)
+{
+    const cst_featvalpair *p;
+
+    for (p = u->relations->head; p; p = p->next) {
+        cst_fprintf(fd, "*** RELATION: %s\n\n", p->name);
+        item_print_tree(fd, relation_head(val_relation(p->val)), "");
+        if (p->next == NULL)
+            break;
+        cst_fprintf(fd, "\n");
+    }
+}
+
+typedef struct named_entry {
+    const char *name;
+} named_entry;
+
+typedef const dur_stat *const dur_stats;
+extern const int cst_val_type_dur_stats;
+
+/* libvoice_en_gb_amy 0x654e4 arm, 0x6553c arm */
+CST_VAL_REGISTER_TYPE_NODEL(dur_stats, dur_stats)
+
+/* libvoice_en_gb_amy 0x65554 arm: the entry of a NULL-terminated table named name, else the
+ * first entry */
+const named_entry *named_table_find(const named_entry *const *t, const char *name)
+{
+    const named_entry *first = t[0], *e = first, *const *p = t;
+
+    if (first == NULL)
+        return NULL;
+    do {
+        if (strcmp(name, e->name) == 0)
+            return e;
+    } while ((e = *++p) != NULL);
+    return first;
+}
+
+cst_val *phones_from_string(const char *s);
+cst_featvalpair *feat_find_featpair(const cst_features *f, const char *name);
+cst_item *val_item(const cst_val *v);
+
+/* 0x6694c arm: an IVONA_Lexicon file ("IVONA_Lexicon", then lines of word and phone string;
+ * "#" comments to the end of the line) as a list of (word . phones). */
+cst_val *lexicon_from_pls(const char *filename)
+{
+    cst_tokenstream *ts;
+    const char *tok;
+    char *word;
+    cst_val *phones, *entries = NULL;
+    cst_val *r = NULL;
+    int comment;
+
+    ts = ts_open(filename);
+    if (ts == NULL)
+        goto ret;
+    ts->p_singlecharsymbols = "#";
+    ts->p_prepunctuationsymbols = "";
+    ts->p_postpunctuationsymbols = "";
+    if (__builtin_expect(strcmp("IVONA_Lexicon", ts_get(ts)) != 0, 0)) {
+        cst_errmsg("IVONA_Lexicon: Missing file header\n");
+        r = NULL;
+        goto out;
+    }
+    comment = 0;
+    while (!ts_eof(ts)) {
+        tok = ts_get(ts);
+        if (tok == NULL || tok[0] == '\0')
+            break;
+        if (strcmp("#", tok) == 0) {
+            comment = 1;
+            continue;
+        }
+        if (comment && strchr(ts->whitespace, '\n') == NULL) {
+            comment = 1;
+            continue;
+        }
+        word = cst_strdup(tok);
+        tok = ts_get(ts);
+        if (tok[0] == '\0' || (phones = phones_from_string(tok)) == NULL) {
+            cst_errmsg("IVONA_Lexicon: Incorrect token at line %d\n", ts->line_number);
+            cst_free(word);
+            delete_val(entries);
+            r = NULL;
+            goto out;
+        }
+        entries = cons_val(cons_val(string_val(word), phones), entries);
+        comment = 0;
+        cst_free(word);
+    }
+    r = val_reverse(entries);
+out:
+    ts_close(ts);
+ret:
+    return r;
+}
+
+/* 0x66ae4 arm: the entry of word (with part of speech pos) in a lexicon list. */
+const cst_val *val_in_lex(const cst_val *entries, const char *word, const char *pos)
+{
+    char *wp = cst_safe_alloc(strlen(word) + 2, 1);
+    const cst_val *r;
+
+    sprintf(wp, "%c%s", pos ? pos[0] : '0', word);
+    r = val_assoc_string(wp, entries);
+    cst_free(wp);
+    return r;
+}
+
+typedef struct zdur_phone {
+    unsigned char name;         /* index into names, 0xff ends the table */
+    unsigned char pad;
+    unsigned short mean;
+    unsigned short stddev;
+} zdur_phone;
+
+typedef struct zdur_node {
+    unsigned char feat;         /* index of "<op><feature path>"; 0xff for a leaf */
+    unsigned char value;        /* index of the value compared with */
+    unsigned short next;        /* node if the question fails; a leaf's z-score (x1000) */
+} zdur_node;
+
+typedef struct zdur_cart {
+    const zdur_phone *phones;
+    const char (*names)[64];
+    const zdur_node *nodes;
+} zdur_cart;
+
+extern const int cst_val_type_zdur_cart;
+
+/* 0x67f94 arm, 0x67fec arm */
+CST_VAL_REGISTER_TYPE_NODEL(zdur_cart, zdur_cart)
+
+/* 0x68004 arm: the duration of seg in ms */
+short zdur_cart_duration(const zdur_cart *dc, const cst_item *seg)
+{
+    const char *name = item_feat_string(seg, "name");
+    const zdur_phone *p = dc->phones;
+    const zdur_phone *q;
+    const zdur_node *n;
+    const char *f, *val;
+    const cst_val *v;
+    char op;
+    int r;
+    short z;
+
+    for (q = p; q->name != 0xff; q++)
+        if (strcmp(name, dc->names[q->name]) == 0) {
+            p = q;
+            break;
+        }
+    for (n = dc->nodes; n->feat != 0xff; ) {
+        f = dc->names[n->feat];
+        op = f[0];
+        val = dc->names[n->value];
+        v = ffeature(seg, f + 1);
+        if (__builtin_expect(op == '<', 0) || __builtin_expect(op == '>', 0)) {
+            if (op == '>')
+                r = val_float(v) > cst_atof(val);
+            else
+                r = val_float(v) < cst_atof(val);
+        }
+        else if (CST_VAL_TYPE(v) == CST_VAL_TYPE_INT)
+            r = val_int(v) == atoi(val);
+        else
+            r = strcmp(val_string(v), val) == 0;
+        if (r)
+            n++;
+        else
+            n = dc->nodes + n->next;
+    }
+    z = n->next;
+    return (z * (short)p->stddev + (z > 0 ? 500 : -500)) / 1000 + p->mean;
+}

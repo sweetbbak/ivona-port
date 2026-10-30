@@ -51,19 +51,16 @@ voice_reg *amy_voice_new(const char *voxdir)
     voice_reg *v = FUN_000586b0(&amy_voice_params);
     /* Keep the string and feature-pointer lifetimes observed in the shipped code.
      * These empty constraints emit no instructions. */
-    register const char *lex_name asm("r8") = "vox_lexicon";
-    register const char *prediction_name asm("r7") = "acoustic_prediction_func";
-    asm("" : "+r"(lex_name), "+r"(prediction_name));
-    register cst_features *first_features asm("r9") = v->features;
-    asm("" : "+r"(first_features));
+    const char *lex_name = "vox_lexicon";
+    const char *prediction_name = "acoustic_prediction_func";
+    cst_features *first_features = v->features;
     set_lexicon(first_features, lex_name, &amy_lexicon);
     feat_set_float(v->features, "duration_stretch", 1.0f);
     set_uttfunc(v->features, prediction_name, duration_select);
     if (voice_load_diphonedb(v->features, voxdir)) {
         cst_features *features = v->features;
         cst_val *graph_func = userdata_val(FUN_000397d0);
-        register const char *graph_name asm("r5") = "diphone_graph_func";
-        asm("" : "+r"(graph_name));
+        const char *graph_name = "diphone_graph_func";
         feat_set(features, graph_name, graph_func);
         feat_set_int(v->features, "viterbi_beam", 50);
         return v;

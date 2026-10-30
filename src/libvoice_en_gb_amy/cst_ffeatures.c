@@ -87,12 +87,10 @@ const cst_val *FUN_000588b8(const cst_item *item)
 
     if (core != NULL && feat_present(core->features, "language_code")) {
         v = feat_val(core->features, "language_code");
-        asm volatile("" : "+r"(v));
         return v;
     }
     if (feat_present(u->features, "language_code")) {
         v = feat_val(u->features, "language_code");
-        asm volatile("" : "+r"(v));
         return v;
     }
     return VAL_STRING_0;
@@ -138,7 +136,6 @@ const cst_val *FUN_00058a4c(const cst_item *item)
 
     if (s == NULL) {
         c = -1;
-        asm ("" : "+r"(c));
         return val_string_n(c);
     }
 
@@ -164,7 +161,7 @@ const cst_val *FUN_00058a88(const cst_item *item)
             c++;
         } while (s != NULL);
     } else {
-        c = (int)s;
+        c = 0;
     }
 
     s = item_next(item_as(item, 3));
@@ -284,7 +281,6 @@ const cst_val *FUN_000590e0(const cst_item *word)
     if (ww != NULL && item_next(ww) != NULL)
         return (const cst_val *)&val_string_empty;
     v = item_feat_func(item_traverse(item_parent(ww), 0), "punc");
-    asm volatile("" : "+r"(v));
     return v;
 }
 

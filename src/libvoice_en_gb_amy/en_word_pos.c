@@ -25,7 +25,13 @@ cst_item *phrase_end_token(const cst_item *item, const char *punc_break);
 int cst_startswith_any(const char *s, const char *const *slist);
 int cst_endswith_any(const char *s, const char *const *slist);
 int en_lex_select_pos(const cst_item *item, const char *word, const char *s);
-extern const char *_ctype_;
+/* bionic's isupper() as the original inlined it ((_ctype_ + 1)[c] & _U): only 'A'..'Z', since
+ * bionic's ctype knows the C locale only */
+static int is_upper(int c)
+{
+    c &= 0xff;
+    return c >= 'A' && c <= 'Z';
+}
 extern const cst_regex *const en_rx_be;
 extern const cst_regex *const en_rx_have;
 
@@ -1263,7 +1269,7 @@ L_3fc64:
     n_r3 = n6;
     if (n6 == -1)
         goto L_3e1b4;
-    if (!(((const unsigned char *)((_ctype_ + (n_r3 & 255))))[1] & 1))
+    if (!is_upper(n_r3))
         goto L_3e1b4;
     return "2";
 L_3fcf4:
@@ -1650,7 +1656,7 @@ L_4165c:
     n_r3 = n9;
     if (n9 == -1)
         goto L_41d84;
-    if (!(((const unsigned char *)((_ctype_ + (n_r3 & 255))))[1] & 1))
+    if (!is_upper(n_r3))
         goto L_41d84;
 L_41708:
     if (strcmp(ffeature_string(item_traverse(it_r4, 0), "language_code"), "en-IN") != 0)
@@ -1789,13 +1795,12 @@ L_41e84:
     n_r3 = ((const signed char *)(s_r9))[0];
     if (((const signed char *)(s_r9))[0] == -1)
         goto L_3e1b4;
-    s_r3 = _ctype_;
-    if (!(((const unsigned char *)((_ctype_ + (n_r3 & 255))))[1] & 1))
+    if (!is_upper(n_r3))
         goto L_3e1b4;
     n_r2 = ((const signed char *)(s_Sc))[0];
     if (((const signed char *)(s_Sc))[0] == -1)
         goto L_3e1b4;
-    if (!(((const unsigned char *)((s_r3 + (n_r2 & 255))))[1] & 1))
+    if (!is_upper(n_r2))
         goto L_3e1b4;
     rx_r5 = cst_rx_lowercase;
     if (!cst_regex_match(cst_rx_lowercase, (s_r9 + 1)))
@@ -2297,7 +2302,7 @@ L_4404c:
     n_r3 = n13;
     if (n13 == -1)
         goto L_3e1b4;
-    if (!(((const unsigned char *)((_ctype_ + (n_r3 & 255))))[1] & 1))
+    if (!is_upper(n_r3))
         goto L_3e1b4;
     if (strcmp(ffeature_string(item_traverse(it_r4, 0x100, 0), "name"), "madrid") != 0)
         goto L_3e1b4;
@@ -2830,7 +2835,7 @@ L_4691c:
     n_r3 = n18;
     if (n18 == -1)
         goto L_46970;
-    if ((((const unsigned char *)((_ctype_ + (n_r3 & 255))))[1] & 1))
+    if (is_upper(n_r3))
         return "n";
 L_46970:
     if (cst_member_string(ffeature_string(item_traverse(it_r4, 0x103, 0), "name"), en_wl_afore))

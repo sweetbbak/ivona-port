@@ -150,3 +150,24 @@ int uni_str_category(const char *s)
             return 0;
     return cat;
 }
+
+/* ---- moved from src/libttsivonavoice/uni.c, which this library no longer compiles ---- */
+
+/* 0x56128 arm: index of key in the sorted array base[n], or -1. */
+int cst_bsearch(const void *key, const void *base, int n, int size,
+                int (*cmp)(const void *key, const void *elem, void *arg), void *arg)
+{
+    int lo = 0, hi = n, mid, r;
+
+    while (lo < hi) {
+        mid = lo + (hi - lo) / 2;
+        r = cmp(key, (const char *)base + mid * size, arg);
+        if (r == 0)
+            return mid;
+        if (r < 0)
+            hi = mid;
+        else
+            lo = mid + 1;
+    }
+    return -1;
+}

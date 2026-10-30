@@ -20,9 +20,8 @@ cst_val *val_cdr_mut(const cst_val *v);
 cst_val *postlex_rewrite_phones(void *arg0, cst_val *phones_in, void *arg2_in, cst_val *next_phones,
                                 postlex_rule_cb rule_cb, int mask1, int mask2)
 {
-    register cst_val *phones asm("r6") = phones_in;
-    register void *arg2 asm("r7") = arg2_in;
-    asm("" : "+r"(phones), "+r"(arg2));
+    cst_val *phones = phones_in;
+    void *arg2 = arg2_in;
     postlex_rule_result out1;
     cst_val *tail;
     cst_val *r5;
@@ -223,7 +222,6 @@ void postlex_create_syl(cst_item *item)
         return;
     item_set_string(new_syl, "endtone", item_feat_string(syl_parent, "endtone"));
     item_set_string(syl_parent, "endtone", NULL);
-    asm volatile("");
 }
 cst_item *item_traverse(const cst_item *item, ...);
 
@@ -253,9 +251,8 @@ cst_item *postlex_insert_phone(cst_item *syl, const char *phone_name, const void
     cst_item *new_seg = item_append(seg, NULL);
     cst_item *d = item_daughter(syl);
 
-    register const char *ps_name asm("r8") = "phoneset";
+    const char *ps_name = "phoneset";
     item_set_string(new_seg, "name", phone_name);
-    asm("" : "+r"(ps_name));
     item_set(new_seg, ps_name, phoneset_val(ps));
     if (d)
         return item_prepend(d, new_seg);

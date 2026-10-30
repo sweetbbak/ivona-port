@@ -41,6 +41,7 @@ int utt_chunk_init(utt_chunk *c, cst_utterance *utt, void *src, int phrasing_mod
     c->break_dur_model = break_dur_model;
     feat_set_int(utt->features, "phrasing_model", phrasing_model);
     feat_set_int(utt->features, "break_dur_model", break_dur_model);
+    return 0;
 }
 
 /* 0x276c8 arm: an empty utterance for the instance *src */

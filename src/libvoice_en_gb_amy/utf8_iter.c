@@ -203,3 +203,17 @@ void utf8_iter_cut(utf8_iter *it)
     if (it->cur)
         *(char *)it->cur = 0;
 }
+
+/* ---- moved from src/libttsivonavoice/utf8_iter.c, which this library no longer compiles ---- */
+
+/* 0x590f0 arm: number of entries in a NULL-terminated pointer array. */
+int strv_len(char **v)
+{
+    int n = 0;
+
+    while (v && *v) {
+        n++;
+        v++;
+    }
+    return n;
+}

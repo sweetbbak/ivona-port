@@ -211,9 +211,8 @@ int vector_lower_bound(const ivona_vector *v, const void *key, ivona_vector_cmp_
     /* sanity checks whose results are unused (assertions compiled out) */
     if (lo > 0)
         cmp((char *)v->data + (lo - 1) * v->elem_size, key);
-    asm goto("cmp %0, %1\n\tbhs %l[done]" : : "r"(lo), "r"(v->count) : : done);
-    cmp((char *)v->data + lo * v->elem_size, key);
-done:
+    if ((size_t)lo < v->count)
+        cmp((char *)v->data + lo * v->elem_size, key);
     return lo;
 }
 

@@ -21,17 +21,6 @@ cst_item *item_traverse(const cst_item *item, ...);
 typedef const cst_val *(*phonefunc)(const cst_val *p);
 CST_VAL_USER_FUNCPTR_DCLS(phonefunc, phonefunc)
 
-/* 0x71008 arm: the entry named name in a NULL-terminated table; the first entry if
- * there is none. */
-const named_entry *named_table_find(const named_entry *const *t, const char *name)
-{
-    int i;
-
-    for (i = 0; t[i]; i++)
-        if (strcmp(name, t[i]->name) == 0)
-            return t[i];
-    return t[0];
-}
 
 CST_VAL_REGISTER_FUNCPTR(phonefunc, phonefunc)
 

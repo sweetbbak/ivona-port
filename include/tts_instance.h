@@ -18,12 +18,13 @@ typedef struct tts_lang_desc {
     void (*part_fini)(void *part);    /* +0x10 */
 } tts_lang_desc;
 
-/* a loaded language data file (res_cache data) */
+/* a loaded language data file (res_cache data): another view of lang_data (lang_tag.c), so
+ * the fields must line up with it on every pointer size */
 typedef struct lang_part {
-    const char *name;
-    void *lexicons;             /* +0x04: NULL-terminated lex_source chain (PRM lexicons) */
-    int unk_8[2];
-    unsigned char data[1];      /* +0x10: handed to the language/voice library */
+    const char *name;           /* lang_data.code */
+    void *lexicons;             /* lang_data.dict: NULL-terminated lex_source chain (PRM lexicons) */
+    void *unk_8[2];             /* lang_data.unk_8, unk_c: the PLS and named PLS lexicons */
+    unsigned char data[1];      /* lang_data.core: handed to the language/voice library */
 } lang_part;
 
 struct tts_instance_struct {

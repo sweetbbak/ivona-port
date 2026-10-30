@@ -126,6 +126,7 @@ cst_val *blacklist_add(blacklist *bl, cst_features *f)
     if (l)
         return val_append((cst_val *)l, v);
     feat_set(f, "blacklist", v);
+    return v;
 }
 
 /* 0x5e24c arm: removes bl from the "blacklist" list of f. */

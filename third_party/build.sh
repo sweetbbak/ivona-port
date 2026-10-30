@@ -10,6 +10,10 @@ TRIPLE=${TRIPLE:-$($CC -dumpmachine)}
 OUT=$TP/build/$TRIPLE
 mkdir -p "$OUT/lib" "$OUT/obj"
 CF="-O2 -fPIC ${EXTRA_CFLAGS:-}"
+# these 2016-era libraries and their configure tests predate C99-strict compilers (GCC 14+, new
+# clang make implicit int / implicit declarations errors): keep those diagnostics as warnings
+CF="$CF -Wno-error=implicit-int -Wno-error=implicit-function-declaration \
+    -Wno-error=incompatible-pointer-types -Wno-error=int-conversion"
 HOSTARG=${HOST:+--host=$HOST}
 
 # OpenSSL 1.0.2h libcrypto: RSA/SHA/HMAC/RAND only (no-err no-engine no-dsa no-dh no-ec*)
@@ -36,10 +40,10 @@ autobuild curl-7.52.1 lib/.libs/libcurl.a --disable-shared --enable-static --dis
     --disable-crypto-auth --disable-cookies --disable-proxy --disable-ftp --disable-telnet \
     --disable-tftp --disable-smb --without-ssl --without-zlib --without-libidn2 --without-libpsl \
     --without-librtmp --without-libssh2 --without-nghttp2 --without-gssapi --without-ca-bundle \
-    --without-ca-path
+    --without-ca-path --disable-ldap --disable-ldaps --without-libidn
 autobuild pcre-8.37 .libs/libpcre.a --disable-shared --enable-static --disable-cpp --enable-utf \
     --enable-unicode-properties --disable-stack-for-recursion --enable-newline-is-any --enable-jit
-autobuild expat-2.2.0 lib/.libs/libexpat.a --disable-shared --enable-static
+autobuild expat-2.2.0 .libs/libexpat.a --disable-shared --enable-static
 
 # SILK (fixed point) and cmp have no build system worth using: compile the sources directly
 if [ ! -f "$OUT/lib/libsilk.a" ]; then

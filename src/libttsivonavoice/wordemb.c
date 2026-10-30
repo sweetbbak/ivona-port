@@ -230,8 +230,7 @@ const float *item_word_embedding(const cst_item *item)
 /* 0x51774 arm: coefficient idx of the word's embedding ("0" if none). */
 const cst_val *item_word_embedding_coeff(const cst_item *item_in, const char *idx)
 {
-    register const cst_item *item asm("r7") = item_in;
-    asm("" : "+r"(item));
+    const cst_item *item = item_in;
     int i = atoi(idx);
     ivona_vector *coeffs;
     const float *f;
@@ -240,8 +239,7 @@ const cst_val *item_word_embedding_coeff(const cst_item *item_in, const char *id
     const cst_val *v;
     cst_features *m;
 
-    register const char *we_name asm("r5") = "word_embedding_coeffs";
-    asm("" : "+r"(we_name));
+    const char *we_name = "word_embedding_coeffs";
 
     if (item_feat_present(item, we_name))
         coeffs = val_vector(item_feat(item, we_name));
@@ -250,16 +248,13 @@ const cst_val *item_word_embedding_coeff(const cst_item *item_in, const char *id
         if (__builtin_expect(v != NULL, 1) && __builtin_expect((we = val_word_embeddings(v)) != NULL, 1)
             && (m = get_param_features(item_utt(item)->features, "core_metrics", NULL),
                 f = word_embeddings_lookup(we, item_feat_string(item, "name"), m)) != NULL) {
-            register word_embeddings *we_reg asm("r8") = we;
-            asm("" : "+r"(we_reg));
-            register const float *f_reg asm("r6") = f;
-            asm("" : "+r"(f_reg));
+            word_embeddings *we_reg = we;
+            const float *f_reg = f;
             coeffs = vector_new(sizeof(cst_val *), NULL, val_vector_elem_free);
             vector_reserve(coeffs, we_reg->dim);
             if (we_reg->dim != 0) {
                 cst_val *fv;
-                register cst_val **sp_ptr asm("sb") = &fv;
-                asm("" : "+r"(sp_ptr));
+                cst_val **sp_ptr = &fv;
                 for (k = 0; k < we_reg->dim; k++) {
                     fv = float_val(f_reg[k]);
                     vector_push(coeffs, sp_ptr);
@@ -268,8 +263,7 @@ const cst_val *item_word_embedding_coeff(const cst_item *item_in, const char *id
         } else {
             coeffs = NULL;
         }
-        register const char *name asm("r4") = "word_embedding_coeffs";
-        asm("" : "+r"(name));
+        const char *name = "word_embedding_coeffs";
         item_set(item, name, vector_val(coeffs));
     }
     if (coeffs != NULL && i < (int)vector_size(coeffs))
