@@ -588,12 +588,7 @@ cst_utterance *default_tokenization(cst_utterance *u)
     return u;
 }
 
-typedef struct lang_core {
-    const char *code;
-    int unk_4[4];
-    cst_features *features;     /* +0x14 */
-    cst_features *ffunctions;   /* +0x18 */
-} lang_core;
+#include "lang_core.h"
 
 void *item_lang_data(const cst_item *i);
 

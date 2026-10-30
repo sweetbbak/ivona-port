@@ -51,7 +51,7 @@ void lex_match_clear(lex_match *m)
 typedef struct lex_ctx {
     void *voice;
     pcre *tokens;               /* +0x04 */
-    ivona_vector *langs;        /* +0x08: of int */
+    ivona_vector *langs;        /* +0x08: of pls_lexicon * */
     void *ctx;                  /* +0x0c */
     ivona_vector *names;        /* +0x10: of strlist * */
     ivona_vector *marks;        /* +0x14: of int */
@@ -81,7 +81,7 @@ lex_ctx *lex_ctx_new(void *voice)
     c = cst_safe_alloc(1, sizeof(lex_ctx));
     c->tokens = re;
     c->voice = voice;
-    c->langs = vector_new(sizeof(int), NULL, NULL);
+    c->langs = vector_new(sizeof(void *), NULL, NULL);
     c->marks = vector_new(sizeof(int), NULL, NULL);
     c->names = vector_new(sizeof(strlist *), NULL, (ivona_vector_destroy_fn)strlist_free_ptr);
     return c;
@@ -115,7 +115,7 @@ void lex_ctx_pop_names(lex_ctx *c)
 }
 
 /* 0x23c5c arm */
-void lex_ctx_push_lang(lex_ctx *c, int lang)
+void lex_ctx_push_lang(lex_ctx *c, void *lang)
 {
     vector_push(c->langs, &lang);
 }

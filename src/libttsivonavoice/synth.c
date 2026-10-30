@@ -163,10 +163,10 @@ void lang_core_free(lang_core *l)
 }
 
 void utt_set_input_text(cst_utterance *u, const char *text);
-int utt_init(cst_utterance *u, voice_reg *reg);
-int utt_text_frontend(cst_utterance *u);
-int utt_phones_frontend(cst_utterance *u);
-int utt_frontend(cst_utterance *u);
+cst_utterance *utt_init(cst_utterance *u, voice_reg *reg);
+cst_utterance *utt_text_frontend(cst_utterance *u);
+cst_utterance *utt_phones_frontend(cst_utterance *u);
+cst_utterance *utt_frontend(cst_utterance *u);
 
 /* 0x50438 arm */
 cst_utterance *utt_from_text(const char *text, voice_reg *reg, void *engine_a, void *engine_b)
@@ -334,13 +334,14 @@ cst_wave *utt_synth_wave(cst_utterance *u, int max_samples, cst_val **marks)
     return w;
 }
 
-/* where the backend continues in an utterance */
+/* where the backend continues in an utterance: the leading fields of wavesynth
+ * (include/tts_wavesynth.h), which must line up with it */
 typedef struct wavesynth {
-    int unk_0;
-    cst_item *seg;          /* +0x04 */
-    int unk_8;
-    int unk_c;
-    int unk_10;
+    cst_item *word;
+    cst_item *seg;          /* next diphone to synthesize */
+    cst_wave *wave;
+    int pos;                /* samples written */
+    int pending;
 } wavesynth;
 
 wavesynth *val_wavesynth(const cst_val *v);
@@ -351,8 +352,8 @@ int utt_rewind(cst_utterance *u, int unused)
     wavesynth *p = val_wavesynth(feat_val(u->features, "streamer"));
 
     p->seg = relation_head(utt_relation(u, 7));
-    p->unk_c = 0;
-    p->unk_10 = 0;
+    p->pos = 0;
+    p->pending = 0;
     return 0;
 }
 

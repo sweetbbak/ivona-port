@@ -25,9 +25,10 @@ typedef struct blacklist blacklist;
 cst_val *blacklist_add(blacklist *bl, cst_features *f);
 void blacklist_remove(blacklist *bl, cst_features *f);
 
+/* the leading fields of diphonedb (include/tts_voxdb.h), which must line up with it */
 typedef struct diphonedb {
-    int unk_0;
-    int checksum;               /* +0x04 */
+    char *name;
+    int key;                    /* the voice database's checksum */
 } diphonedb;
 diphonedb *val_diphonedb(const cst_val *v);
 
@@ -242,7 +243,7 @@ int addon_selector_matches(const addon_selector *s, tts_voice *v)
     cst_features *f = VOICE_FEATURES(v);
 
     if (s->checksum && (!feat_present(f, "diphonedb")
-                        || val_diphonedb(feat_val(f, "diphonedb"))->checksum != s->checksum))
+                        || val_diphonedb(feat_val(f, "diphonedb"))->key != s->checksum))
         return 0;
     if (s->vox_name && strcmp(v->vox_name, s->vox_name) != 0)
         return 0;

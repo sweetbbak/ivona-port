@@ -34,10 +34,10 @@ cst_val *zdur_cart_val(const unsigned char **tables);
 cst_val *dynamic_voxdbs_val(const dynamic_voxdbs *v);
 dynamic_voxdbs *dynamic_voxdbs_new(diphonedb *a);
 
-int pcm_unit_decode();
+track *pcm_unit_decode(vox_decoder *d, const unsigned char *data, unsigned int size);
 int vorbis_unit_open(vox_decoder *d);
 void vorbis_unit_close(vox_decoder *d);
-int vorbis_unit_decode();
+track *vorbis_unit_decode(vox_decoder *d, const unsigned char *data, unsigned int size);
 int vorbis_ogg_unit_open(vox_decoder *d);
 void vorbis_ogg_unit_close(vox_decoder *d);
 int vorbis_ogg_unit_decode();
@@ -810,7 +810,7 @@ int *unit_select_viterbi(unit_selector *s, unsigned int beam, const cst_val *bl,
             vox_unit b;
         } u;
         struct {
-            unsigned char pad[0x9c];
+            unsigned char pad[2 * sizeof(vox_unit)];   /* past u (0x9c bytes on 32-bit) */
             unsigned int best[2002];
         } s;
     } w;

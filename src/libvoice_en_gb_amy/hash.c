@@ -17,7 +17,7 @@ typedef struct hash {
     void (*free_value)(void *value);
 } hash;
 
-void *cst_memdup(const void *p, int n);
+void *cst_memdup(const void *p, size_t n);
 
 /* 0x33690 arm: MurmurHash2 */
 static unsigned int murmur_hash2(const void *key, size_t len)

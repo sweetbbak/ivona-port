@@ -38,12 +38,7 @@ typedef struct cst_synth_module {
 } cst_synth_module;
 
 /* language core data of a voice (see synth.c) */
-typedef struct lang_core {
-    const char *code;
-    int unk_4[4];
-    cst_features *features;     /* +0x14 */
-    cst_features *ffunctions;   /* +0x18 */
-} lang_core;
+#include "lang_core.h"
 
 typedef struct synth_voice {
     cst_features *features;
@@ -125,7 +120,7 @@ cst_utterance *utt_init(cst_utterance *u, synth_voice *v)
 {
     feat_copy_into(v->features, u->features);
     feat_copy_into(v->lang->features, u->features);
-    feat_copy_into(v->lang->ffunctions, u->ffunctions);
+    feat_copy_into(v->lang->params, u->ffunctions);
     if (v->utt_init)
         v->utt_init(u, v);
     if (!get_param_int(u->features, "deterministic_path", 1))
@@ -462,7 +457,7 @@ const char *xsampa_mod_name(unsigned int flag)
 cst_item *item_traverse(const cst_item *item, ...);
 const char *ffeature_string(const cst_item *item, const char *featpath);
 int ffeature_int(const cst_item *item, const char *featpath);
-void str_rewrite_span(const char *s, int start, int len, const void *rules, int flags, char *out);
+void str_rewrite_span(const char *s, unsigned int start, unsigned int len, const void *rules, const char *tag, char *out);
 
 /* how syllable stress values are written */
 typedef struct stress_info {
@@ -543,7 +538,7 @@ char *xivona_to_xsampa(cst_item *seg, const void *rules, const stress_info *si)
         if (item_next(item_as(word, REL_PHRASE)) == NULL)
             strbuf_append_str(&ctx, "[$$]");
         buf = cst_safe_alloc(ctx.len + 1, 1);
-        str_rewrite_span(ctx.data, start, len, rules, 0, buf);
+        str_rewrite_span(ctx.data, start, len, rules, NULL, buf);
         strbuf_append_str(&out, buf);
         cst_free(buf);
         if (si != default_stress_info

@@ -422,8 +422,9 @@ int acoustic_stub_0(void) {
 }
 
 /* 0x5debc arm */
-int acoustic_stub_1(void) {
-    return 0;
+float acoustic_stub_1(const void *a, const void *b, int x) {
+    (void)a, (void)b, (void)x;
+    return 0.0f;
 }
 
 /* 0x5dec4 arm: writes the frame count and the frames to out (if not NULL); returns the

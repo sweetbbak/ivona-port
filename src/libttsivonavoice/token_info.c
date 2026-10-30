@@ -2,6 +2,7 @@
  * Tokens of an utterance as list nodes (0x356d8..0x36a3c): what token_chunk_from_utt
  * (utt_chunk.c) keeps of each token while it rearranges them, and how they become tokens again.
  */
+#include <stddef.h>
 #include "cst_alloc.h"
 #include "cst_features.h"
 #include "cst_item.h"
@@ -72,9 +73,11 @@ typedef struct token_info {
     } u;
 } token_info;
 
-#define TOKEN_INFO_SIZE_VAL 0x2c
-#define TOKEN_INFO_SIZE_PH 0x54
-#define TOKEN_INFO_SIZE_WORD 0x5c
+/* each kind is allocated only as large as its part of the union (0x2c, 0x54, 0x5c bytes on
+ * 32-bit) */
+#define TOKEN_INFO_SIZE_VAL (offsetof(token_info, u) + sizeof(cst_val *))
+#define TOKEN_INFO_SIZE_PH (offsetof(token_info, u) + sizeof(((token_info *)0)->u.ph))
+#define TOKEN_INFO_SIZE_WORD (offsetof(token_info, u) + sizeof(((token_info *)0)->u.word))
 
 static inline int item_int_or(const cst_item *t, const char *name, int def)
 {

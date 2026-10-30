@@ -290,15 +290,15 @@ static void voices_by_lang(const ivona_vector *voices, const char *lang, voice_l
         else if (!exact) {
             if (m == 3) {
                 if (v3 == NULL)
-                    v3 = vector_new(4, NULL, NULL);
+                    v3 = vector_new(sizeof(tts_voice *), NULL, NULL);
                 vector_push(v3, p);
             } else if (m == 2) {
                 if (v2 == NULL)
-                    v2 = vector_new(4, NULL, NULL);
+                    v2 = vector_new(sizeof(tts_voice *), NULL, NULL);
                 vector_push(v2, p);
             } else if (m == 1) {
                 if (v1 == NULL)
-                    v1 = vector_new(4, NULL, NULL);
+                    v1 = vector_new(sizeof(tts_voice *), NULL, NULL);
                 vector_push(v1, p);
             }
         }
@@ -379,7 +379,7 @@ static void voices_by_age(const ivona_vector *voices, const char *age, ivona_vec
             voice_insert_by_age(out, *p, n);
         else {
             if (others == NULL)
-                others = vector_new(4, NULL, NULL);
+                others = vector_new(sizeof(tts_voice *), NULL, NULL);
             voice_insert_by_age(others, *p, n);
         }
     }
@@ -466,7 +466,7 @@ tts_voice *ssml_select_voice(synth_iter *it, dom_elem *e, int by_lang)
             value = voice_attr_value(e, *w);
             if (value == NULL)
                 continue;
-            next = vector_new(4, NULL, NULL);
+            next = vector_new(sizeof(tts_voice *), NULL, NULL);
             VOICES_FILTER(cur, *w, value, 1, next);
             vector_free(cur);
             cur = next;
@@ -505,7 +505,7 @@ tts_voice *ssml_select_voice(synth_iter *it, dom_elem *e, int by_lang)
             value = voice_attr_value(e, *w);
             if (value == NULL)
                 continue;
-            next = vector_new(4, NULL, NULL);
+            next = vector_new(sizeof(tts_voice *), NULL, NULL);
             VOICES_FILTER(cur, *w, value, 0, next);
             if (vector_size(next) == 0)
                 vector_free(next);
@@ -667,7 +667,7 @@ void tts_set_errorf(int code, const char *fmt, ...);
 void dom_text_free(dom_text *t);
 void lex_ctx_push_names(lex_ctx *c, const char *names);
 void lex_ctx_pop_names(lex_ctx *c);
-void lex_ctx_push_lang(lex_ctx *c, pls_lexicon *lex);
+void lex_ctx_push_lang(lex_ctx *c, void *lex);
 void lex_ctx_pop_lang(lex_ctx *c);
 int speaking_style_id(const char *name);
 void flag_set(int *f);
@@ -1437,14 +1437,7 @@ static void synth_chunk_free_ptr(void *p)
 
 /* the language of the context */
 /* the tokens of an utterance chunk (utt_chunk.c) */
-typedef struct token_chunk {
-    void *head;
-    void *tail;
-    ustr_span span;             /* +0x08 */
-    int phrasing_model;         /* +0x10 */
-    int break_dur_model;        /* +0x14 */
-    void *src;                  /* +0x18 */
-} token_chunk;
+#include "token_chunk.h"
 void token_chunk_from_utt(const utt_chunk *c, token_chunk *tc, void *ctx);
 
 #define UTT_BUILDER_FLUSH(v, b)                                                         \
@@ -2569,8 +2562,8 @@ synth_state *synth_state_new(void *a, void *b, tts_voice *v)
 
     s->ctx = synth_ctx_new(v);
     s->builder = utt_builder_new(a, b, v);
-    s->say_as_stack = vector_new(4, NULL, NULL);
-    s->digit_groups_stack = vector_new(4, NULL, (ivona_vector_destroy_fn)vector_free_ptr);
+    s->say_as_stack = vector_new(sizeof(const say_as_info *), NULL, NULL);
+    s->digit_groups_stack = vector_new(sizeof(ivona_vector *), NULL, (ivona_vector_destroy_fn)vector_free_ptr);
     s->lang_stack = strlist_new();
     flag_reset(&flags);
     s->flag_stack = vector_new(sizeof(int), NULL, NULL);

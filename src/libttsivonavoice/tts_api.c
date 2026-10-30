@@ -47,9 +47,9 @@ void lang_data_free(void *data);
 void addon_attach(void *addon, void *module);
 void addon_detach(void *addon, void *module);
 void addon_free(void *addon);
-void *addon_load(const void *data, int size);
+void *addon_load(const void *data, size_t size);
 void *addon_load_file(const char *path);
-int license_acquire(void *license, void *key);
+int license_acquire(void *license, unsigned int max);
 void license_free(void *p);
 
 int tts_unload_all_languages(tts_instance *tts);
@@ -407,7 +407,7 @@ void *tts_find_license(tts_instance *tts)
     for (i = 0; i < vector_size(tts->resources); ) {
         r = *(tts_resource **)vector_at(tts->resources, i);
         i++;
-        if (r->cert != NULL && license_acquire(r->license, ((void **)r->cert)[7]))
+        if (r->cert != NULL && license_acquire(r->license, ((tts_cert_data *)r->cert)->license_id))
             return r->license;
     }
     if (i == 0)
@@ -648,22 +648,15 @@ int tts_unload_all_languages(tts_instance *tts)
 }
 
 /* 0x3b1ec */
+cst_features *streamer_metrics(const void *data);   /* streamer.c */
+
 cst_features *tts_streamer_get_metrics(tts_streamer *st)
 {
-    struct { char pad[0xc]; cst_utterance *utt; char pad2[0x34]; cst_features *metrics; } *d;
-
     if (st == NULL) {
         tts_set_error(TTS_STATUS_INVALID_ARGUMENT);
         return NULL;
     }
-    d = st->data;
-    if (d == NULL)
-        return NULL;
-    if (d->metrics)
-        return d->metrics;
-    if (d->utt == NULL)
-        return NULL;
-    return get_param_features(d->utt->features, "core_metrics", NULL);
+    return st->data ? streamer_metrics(st->data) : NULL;
 }
 
 /* fill one output record from a metric definition */

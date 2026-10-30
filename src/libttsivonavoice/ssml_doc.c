@@ -1,6 +1,7 @@
 /*
  * The state of one SSML document being read (0x2842c..0x28fcc).
  */
+#include <stdint.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -646,7 +647,7 @@ typedef struct fetch_result {
     void *data;
     size_t size;
 } fetch_result;
-int fetcher_fetch(fetcher *f, const char *uri, float timeout, int maxage, int maxstale,
+int fetcher_fetch(fetcher *f, const char *uri, float timeout, void *maxage, void *maxstale,
                   cst_features *metrics);
 fetch_result *fetcher_result(fetcher *f);
 tts_msg *fetcher_messages(fetcher *f);
@@ -700,7 +701,7 @@ int ssml_lexicon_load(ssml_doc *d, ssml_lexicon *lex)
     if (lex->loaded)
         return 1;
     lex->loaded = 1;
-    status = fetcher_fetch(d->fetch, lex->uri, lex->timeout, lex->maxage, lex->maxstale,
+    status = fetcher_fetch(d->fetch, lex->uri, lex->timeout, (void *)(intptr_t)lex->maxage, (void *)(intptr_t)lex->maxstale,
                            d->metrics);
     if (status == FETCH_OK) {
         r = fetcher_result(d->fetch);
@@ -821,7 +822,7 @@ int ssml_audio_fetch(ssml_doc *d, dom_elem *e)
         if (dom_get_attr(e, "fetchtimeout") == NULL
             || !((timeout = ssml_time_attr(d, e, "fetchtimeout")) >= 0))
             timeout = 120.0f;
-        status = fetcher_fetch(d->fetch, src, timeout, maxage, maxstale, d->metrics);
+        status = fetcher_fetch(d->fetch, src, timeout, (void *)(intptr_t)maxage, (void *)(intptr_t)maxstale, d->metrics);
         if (status != FETCH_OK) {
             if (status == FETCH_ABORTED)
                 return -1;
@@ -848,10 +849,7 @@ int ssml_audio_fetch(ssml_doc *d, dom_elem *e)
 }
 
 /* the marks of a document in text order, consumed as synthesis passes them */
-typedef struct mark_queue {
-    ivona_vector *marks;        /* of ssml_audio */
-    size_t next;
-} mark_queue;
+#include "mark_queue.h"
 
 /* 0x2abe4 arm */
 void mark_queue_init(mark_queue *q, ivona_vector *marks)

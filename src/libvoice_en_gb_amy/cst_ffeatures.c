@@ -11,10 +11,8 @@ void *item_lang_data(const cst_item *item);
 const cst_item *item_traverse(const cst_item *i, int path, ...);
 const cst_val *item_feat_func(const cst_item *i, const char *feat);
 
-typedef struct ivona_lang_core_struct {
-    char pad_00[0x14];
-    cst_features *features;
-} ivona_lang_core;
+#include "lang_core.h"
+typedef lang_core ivona_lang_core;
 
 DEF_STATIC_CONST_VAL_STRING(val_string_single, "single");
 DEF_STATIC_CONST_VAL_STRING(val_string_mid, "mid");

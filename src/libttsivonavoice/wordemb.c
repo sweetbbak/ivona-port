@@ -16,7 +16,7 @@
 #include "tts_metrics.h"
 
 typedef struct hash hash;
-hash *hash_new(int size, int flags);
+hash *hash_new(unsigned int size, void (*free_value)(void *value));
 void hash_free(hash *h);
 void hash_put(hash *h, const char *key, size_t len, void *value);
 int hash_remove(hash *h, const char *key, size_t len);
@@ -73,7 +73,7 @@ word_embeddings *new_word_embeddings(unsigned int count, unsigned int dim)
 {
     word_embeddings *we = cst_safe_alloc(1, sizeof(word_embeddings));
 
-    we->map = hash_new(count, 0);
+    we->map = hash_new(count, NULL);
     we->count = 0;
     we->dim = dim;
     return we;

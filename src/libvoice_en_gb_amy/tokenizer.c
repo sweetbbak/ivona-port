@@ -26,7 +26,7 @@ struct token {
     const char *postpunctuation;
     int start;              /* +0x10: input position */
     int end;                /* +0x14 */
-    int unk_18;
+    const char *extra;      /* +0x18: none from the plain tokenizer */
 };
 
 struct tokenizer {
@@ -173,7 +173,7 @@ static inline token *ts_tokenizer_token(cst_tokenstream *ts, tokenizer *t)
     t->tok.postpunctuation = ts->postpunctuation;
     t->tok.start = ts->token_pos;
     t->tok.end = ts->file_pos;
-    t->tok.unk_18 = eof;
+    t->tok.extra = NULL;    /* eof is 0 here; the original stored it in this slot */
     return &t->tok;
 }
 

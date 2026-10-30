@@ -19,10 +19,7 @@
 #include "tts_synth.h"
 #include "tts_voice.h"
 
-typedef struct ivona_ustr {
-    char *data;
-    int len;
-} ivona_ustr;
+#include "ivona_ustr.h"
 
 ivona_ustr *ustr_new(unsigned int pos, const char *s, size_t n);
 void ivona_ustr_free(ivona_ustr *u);
@@ -31,47 +28,22 @@ size_t (*charset_strlen_func(const char *encoding))(const char *s);
 const char *charset_detect(const char *encoding, const char *s);
 int text_is_ssml(const char *s, int len);
 
-/* SSML document (ssml.c) */
-typedef struct dom_node {
-    void *root;
-} dom_node;
+/* SSML document (ssml_doc.c) and its DOM */
+#include "ssml_doc.h"
 
-typedef struct ssml_doc {
-    int unk_0;
-    dom_node *dom;          /* +0x04 */
-    int unk_8[6];
-    int is_ssml;            /* +0x20 */
-    int unk_24;
-    int unk_28;             /* +0x28 */
-    int unk_2c;
-    tts_msg *warnings;      /* +0x30: pending input warnings */
-    tts_msg *warning;       /* +0x34: the one last returned */
-} ssml_doc;
-
-typedef struct dom_text {
-    int unk_0[4];
-    ivona_ustr *text;       /* +0x10 */
-    int unk_14;
-} dom_text;
-
-ssml_doc *ssml_doc_new(void);
+ssml_doc *ssml_doc_new(cst_features *metrics);
 void ssml_doc_free(ssml_doc *doc);
 void ssml_doc_reset(ssml_doc *doc);
 void ssml_doc_set_voice(ssml_doc *doc, tts_voice *v);
 int ssml_doc_prepare(ssml_doc *doc, tts_voice *v);
 void ssml_doc_set_encoding(ssml_doc *doc, const char *encoding);
 int ssml_parse(ssml_doc *doc, ivona_ustr *text, int a, int b);
-dom_text *dom_text_new(void);
-dom_node *dom_new(void);
-void *dom_element_new(const char *name, int type);
-void dom_set_attr(void *elem, const char *name, const char *value);
-void dom_append_child(void *elem, void *child);
 
 void *synth_iter_new(ssml_doc *doc, ivona_vector *voices, ivona_vector *chunks, void *strings);
 void synth_iter_free(void *iter);
 int synth_iter_next(void *iter);
 void utt_rewind(cst_utterance *utt, int pos);
-void mark_queue_init(void *q, int arg);
+void mark_queue_init(void *q, ivona_vector *marks);
 void *strpool_new(void);
 void strpool_free(void *q);
 void audio_chunk_free(void *chunk, size_t size);
@@ -113,13 +85,8 @@ void *tts_get_certificate(tts_instance *tts);
 void *tts_find_license(tts_instance *tts);
 
 /* a chunk of the input queued for synthesis (vector element) */
-typedef struct stream_chunk {
-    int unk_0[2];
-    int start;              /* +0x08: text span */
-    int end;
-    int unk_10[2];
-    tts_voice *voice;       /* +0x18 */
-} stream_chunk;
+#include "token_chunk.h"
+#include "mark_queue.h"
 
 /* tts_streamer.data */
 typedef struct streamer {
@@ -133,7 +100,7 @@ typedef struct streamer {
     float speed;            /* +0x1c */
     ssml_doc *doc;          /* +0x20 */
     void *iter;             /* +0x24 */
-    int marks[2];           /* +0x28: mark queue (SSML <mark>s by text position) */
+    mark_queue marks;       /* SSML <mark>s by text position */
     union {                 /* +0x30: text span of the last word mark */
         unsigned char last_span[8];
         struct {
@@ -147,6 +114,18 @@ typedef struct streamer {
     cst_features *metrics;  /* +0x44 */
 } streamer;
 
+/* the streamer's metrics, else those its current utterance collected (tts_streamer_get_metrics) */
+cst_features *streamer_metrics(const void *data)
+{
+    const streamer *s = data;
+
+    if (s->metrics)
+        return s->metrics;
+    if (s->utt == NULL)
+        return NULL;
+    return get_param_features(s->utt->features, "core_metrics", NULL);
+}
+
 /* 0x3da98 arm: a document of the plain text as one SSML <speak> in the first voice's language. */
 int streamer_plain_text(ssml_doc **pdoc, ivona_vector *voices, const char *text, size_t len)
 {
@@ -155,13 +134,13 @@ int streamer_plain_text(ssml_doc **pdoc, ivona_vector *voices, const char *text,
     dom_text *t = dom_text_new();
 
     t->text = ustr_new(0, text, len);
-    t->unk_14 = 0;
+    t->state = 0;
     (*pdoc)->dom = dom_new();
     (*pdoc)->dom->root = dom_element_new("http://www.w3.org/2001/10/synthesis^speak", 0x11);
     dom_set_attr((*pdoc)->dom->root, "version", "1.1");
     dom_set_attr((*pdoc)->dom->root, "http://www.w3.org/XML/1998/namespace^lang",
                  v->voice->lang_codes);
-    dom_append_child((*pdoc)->dom->root, t);
+    dom_append_child((*pdoc)->dom->root, &t->n);
     (*pdoc)->is_ssml = 0;
     ssml_doc_set_encoding(*pdoc, charset_detect(enc, text));
     return 0;
@@ -297,7 +276,7 @@ int streamer_set_text(streamer *s, const char *text)
         return ret;
     if (ssml_doc_prepare(s->doc, v)) {
         s->iter = synth_iter_new(s->doc, s->voices, s->chunks, s->strings);
-        mark_queue_init(s->marks, s->doc->unk_28);
+        mark_queue_init(&s->marks, s->doc->audio);
         return 0;
     }
     return 2;
@@ -324,7 +303,7 @@ tts_wave *streamer_marks(tts_streamer *st, cst_wave *w, const cst_val *marks)
 {
     streamer *s = st->data;
     tts_wave *tw = cst_safe_calloc(1, sizeof(tts_wave));
-    stream_chunk *chunk;
+    token_chunk *chunk;
     const cst_val *p;
     audiotag *m;
     ssml_mark *sm;
@@ -347,9 +326,9 @@ tts_wave *streamer_marks(tts_streamer *st, cst_wave *w, const cst_val *marks)
     if (s->done == 0) {
         chunk = vector_at(s->chunks, s->pos);
         if (s->pos == 0
-            || ((stream_chunk *)vector_at(s->chunks, s->pos - 1))->voice != chunk->voice)
-            wave_add_mark(tw, TTS_MARK_VOICE, chunk->voice->voice->name, 0, 0, 0);
-        wave_add_mark(tw, TTS_MARK_SENTENCE, NULL, chunk->start, chunk->end, 0);
+            || ((token_chunk *)vector_at(s->chunks, s->pos - 1))->src != chunk->src)
+            wave_add_mark(tw, TTS_MARK_VOICE, ((tts_voice *)chunk->src)->voice->name, 0, 0, 0);
+        wave_add_mark(tw, TTS_MARK_SENTENCE, NULL, chunk->span.start, chunk->span.end, 0);
         memset(s->last_span, 0, sizeof(s->last_span));
     }
     for (p = marks; p; p = val_cdr(p)) {
@@ -366,7 +345,7 @@ tts_wave *streamer_marks(tts_streamer *st, cst_wave *w, const cst_val *marks)
                 else
                     lim = first;
                 sample = m->sample;
-                while ((sm = mark_queue_pop(s->marks, start)) != NULL) {
+                while ((sm = mark_queue_pop(&s->marks, start)) != NULL) {
                     if (lim >= sm->end)
                         continue;
                     wave_add_mark(tw, TTS_MARK_SSML,
@@ -382,7 +361,7 @@ tts_wave *streamer_marks(tts_streamer *st, cst_wave *w, const cst_val *marks)
         if (m->flags & AUDIOTAG_WORD_END) {
             start = item_feat_int(m->item, "end_pos");
             sample = m->sample;
-            while ((sm = mark_queue_pop(s->marks, start)) != NULL) {
+            while ((sm = mark_queue_pop(&s->marks, start)) != NULL) {
                 if (first >= sm->end)
                     continue;
                 wave_add_mark(tw, TTS_MARK_SSML,
@@ -451,7 +430,7 @@ tts_streamer *tts_streamer_start(tts_voice *v, const char *text, float speed)
     rate = tts_voice_sample_rate(v);
     s = cst_safe_calloc(1, sizeof(streamer));
     s->strings = strpool_new();
-    s->chunks = vector_new(0x1c, NULL, audio_chunk_free);
+    s->chunks = vector_new(sizeof(token_chunk), NULL, audio_chunk_free);
     s->done = 0;
     if (!(speed >= 1.0f) && speed != -1.0f)
         speed = speed < 0.0f ? -1.0f : 1.0f;
@@ -461,7 +440,7 @@ tts_streamer *tts_streamer_start(tts_voice *v, const char *text, float speed)
     s->license = license;
     s->voices = vector_new(sizeof(tts_voice *), NULL, NULL);
     s->metrics = metrics ? NULL : metrics_new();
-    s->doc = ssml_doc_new();
+    s->doc = ssml_doc_new(s->metrics);   /* the original passed it in r0 by accident of order */
     vector_push(s->voices, &v);
     if (streamer_set_text(s, text) != 0) {
         streamer_free(s);
@@ -625,7 +604,7 @@ int tts_streamer_synth0(tts_streamer *st, short *samples, int num_samples)
                 s->metrics = NULL;
             }
             utt->unk_14 = synth_iter_ctx(s->iter);
-            s->voice = ((stream_chunk *)chunk)->voice;
+            s->voice = (tts_voice *)((token_chunk *)chunk)->src;
             utt = s->utt = utt_synth_frontend(s->utt, VOICE_DATA(s->voice)->reg);
             if (utt == NULL) {
                 tts_set_error(TTS_STATUS_INTERNAL_ERROR);
@@ -819,7 +798,7 @@ next_chunk:
             s->metrics = NULL;
         }
         utt->unk_14 = synth_iter_ctx(s->iter);
-        s->voice = ((stream_chunk *)chunk)->voice;
+        s->voice = (tts_voice *)((token_chunk *)chunk)->src;
         utt = s->utt = utt_synth_frontend(s->utt, VOICE_DATA(s->voice)->reg);
         if (utt == NULL) {
             tts_set_error(TTS_STATUS_INTERNAL_ERROR);
@@ -918,7 +897,7 @@ tts_wave *tts_streamer_synth(tts_streamer *st, int num_samples)
                 s->metrics = NULL;
             }
             utt->unk_14 = synth_iter_ctx(s->iter);
-            s->voice = ((stream_chunk *)chunk)->voice;
+            s->voice = (tts_voice *)((token_chunk *)chunk)->src;
             utt = s->utt = utt_synth_frontend(s->utt, VOICE_DATA(s->voice)->reg);
             if (utt == NULL) {
                 tts_set_error(TTS_STATUS_INTERNAL_ERROR);

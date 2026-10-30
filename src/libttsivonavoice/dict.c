@@ -23,23 +23,13 @@
 #define PCRE_DICT_OPTIONS (PCRE_CASELESS | PCRE_UTF8 | PCRE_NO_UTF8_CHECK | PCRE_UCP)
 
 /* a string converted from an input encoding (charset.c) */
-typedef struct ivona_ustr {
-    char *data;
-    int len;
-    int unk_8;
-    char *unk_c;
-} ivona_ustr;
+#include "ivona_ustr.h"
 
 ivona_ustr *ivona_ustr_decode(const char *s, const char *encoding);
 void ivona_ustr_free(ivona_ustr *u);
 ivona_ustr *ustr_new(unsigned int pos, const char *s, size_t n);
 void ustr_clear(ivona_ustr *u);
 ivona_ustr *ustr_decode_into(const ivona_ustr *u, ivona_ustr *out, const char *charset);
-
-typedef struct ustr_span {
-    size_t start;
-    size_t end;
-} ustr_span;
 
 void ustr_append(ivona_ustr *u, const char *s, size_t n, const ustr_span *span);
 

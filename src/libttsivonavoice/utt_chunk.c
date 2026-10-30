@@ -83,14 +83,7 @@ struct token_node {
     token_node *next;
 };
 
-typedef struct token_chunk {
-    token_node *head;
-    token_node *tail;
-    ustr_span span;             /* +0x08 */
-    int phrasing_model;         /* +0x10 */
-    int break_dur_model;        /* +0x14 */
-    void *src;                  /* +0x18 */
-} token_chunk;
+#include "token_chunk.h"
 
 token_node *token_info_from_item(cst_item *t, void *ctx);
 void token_info_free(token_node *n);

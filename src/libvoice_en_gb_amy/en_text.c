@@ -648,7 +648,7 @@ const char *word_role_pos(const cst_item *word, const char *(*pos_func)(const cs
 }
 
 int utf8_decode(const char *str, int *len);
-int utf8_strlen_gt(const char *str, int count);
+int utf8_strlen_gt(const char *str, size_t count);
 int uni_category(unsigned int codepoint);
 int uni_cat_is_text(int category);
 const char *utf8_strchr(const char *str, unsigned int codepoint);
